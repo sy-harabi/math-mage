@@ -1,5 +1,5 @@
 import { createLaserSegment } from './laser.js';
-import { ENEMY_TYPES } from './enemy-types.js';
+import { ENEMY_TYPES } from './enemy-types.js?v=enemy-balance-2';
 
 // Presentation only: world positions, collision radii and attack timing stay in game.js.
 export const NEON = Object.freeze({

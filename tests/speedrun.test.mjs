@@ -33,7 +33,9 @@ test('boss has wider telegraphed slam and longer, faster dash than the prior bui
   assert.ok(boss.speed>102);
   assert.ok(boss.slamRadius>130);
   assert.ok(boss.dashSpeed*boss.dashDuration>470*.7);
-  assert.ok(boss.dashWindup>=.75,'warn before the faster dash');
+  assert.equal(boss.slamWindup,.9);
+  assert.equal(boss.dashWindup,.5);
+  assert.equal(boss.dashSpeed,900);
 });
 
 test('displayed page contains no stage number or progress bar; Math HUD and victory panel exist', async()=>{

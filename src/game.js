@@ -1,7 +1,7 @@
 import { SPELLS, getSpellAtLevel } from './spells.js?v=1.8.0';
 import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
-import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
+import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=enemy-balance-2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
@@ -16,7 +16,7 @@ import { pickEnemyAt } from './targeting.js';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
 import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 import { grantShield, applyPlayerHit } from './shield.js';
-import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=grid-1';
+import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=enemy-balance-2';
 
 (() => {
 'use strict';
@@ -617,4 +617,3 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).obser
 else window.addEventListener('resize',updateRuneScale);
 updateRuneScale();reset();requestAnimationFrame(loop);
 })();
-

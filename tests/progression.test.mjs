@@ -115,7 +115,8 @@ test('All enemy attacks are at least 20 and fast enemies remain faster than basi
   for(const cfg of Object.values(ENEMY_TYPES))assert.ok(cfg.damage>=20);
   assert.ok(ENEMY_TYPES.boss.dashDamage>=20);
   assert.ok(ENEMY_TYPES.boss.slamDamage>=20);
-  assert.equal(ENEMY_TYPES.ranged.windup,1.1);
+  assert.equal(ENEMY_TYPES.ranged.attackInterval,3);
+  assert.equal(ENEMY_TYPES.ranged.windup,.8);
   assert.equal(ENEMY_TYPES.ranged.laserWidth,34);
 });
 

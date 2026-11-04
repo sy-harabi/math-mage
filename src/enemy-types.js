@@ -12,14 +12,14 @@ export const ENEMY_TYPES = Object.freeze({
   },
   ranged: {
     name: '원거리 슬라임', hp: 30, speed: 95, speedVariance: 0,
-    damage: 22, attackInterval: 3.4, windup: 1.1, laserRange: 820, laserWidth: 34, laserDuration: .18,
+    damage: 22, attackInterval: 3.0, windup: .8, laserRange: 820, laserWidth: 34, laserDuration: .18,
     preferredMin: 230, preferredMax: 320, radius: 20,
     xp: 10, stageProgress: 8, fill: '#af84ea', border: '#dcc5ff',
   },
   boss: {
     name: '슬라임 군주', hp: 260, speed: 140, speedVariance: 0,
-    damage: 28, slamDamage: 28, slamRadius: 175, slamWindup: 1.1,
-    dashDamage: 22, dashSpeed: 620, dashDuration: .8, dashWindup: .8,
+    damage: 28, slamDamage: 28, slamRadius: 175, slamWindup: .9,
+    dashDamage: 22, dashSpeed: 900, dashDuration: .8, dashWindup: .5,
     attackInterval: 3.5, enragedAttackInterval: 3.0, radius: 45,
     xp: 50, stageProgress: 30, fill: '#a964da', border: '#ffc5f6',
   },
