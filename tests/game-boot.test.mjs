@@ -95,8 +95,8 @@ test('PC ritual is a transparent five-point pentagram, not an exercise-card list
   assert.match(css,/\.math-choice:nth-child\(5\)/);
 });
 
-test('fireball assembles every rank with fixed runes, previews radius and explodes on click before a frame',async()=>{
-  const {generateDefiniteIntegralSequence}=await import('../src/definite-integral.js');
+test('fireball assembles every rank with refreshed runes and final +C, previews radius and explodes on click before a frame',async()=>{
+  const {generateIntegralSequence}=await import('../src/integral-sequence.js');
   const {getSpellAtLevel}=await import('../src/spells.js');
   const elements=new Map();
   const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
@@ -112,25 +112,26 @@ test('fireball assembles every rank with fixed runes, previews radius and explod
   const key=key=>listeners.get('keydown')({key,repeat:false,preventDefault(){}});
   const random=Math.random;Math.random=()=>.25;
   try{
-    await import('../src/game.js?definite-integral-events');
+    await import('../src/game.js?indefinite-integral-events');
     for(let level=1;level<=3;level++){
       get('restart').click();debug.dataset.fireballLevel=String(level);debug.click();key('3');
-      const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',level).problem,()=>.25);
-      const nodes=[...get('math-answers').children];
-      const formulas=nodes.map(n=>n.children[1].innerHTML);
+      const expected=generateIntegralSequence(getSpellAtLevel('fireball',level).problem,()=>.25);
+      let previousNodes=null;
       const left=get('rune-frame').style.left;
       key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
       assert.equal(get('rune-frame').style.left,left);
-      for(let i=0;i<level;i++){
+      for(let i=0;i<=level;i++){
         assert.equal(get('math-title').textContent,'');
         assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuenow="${i}"`));
-        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level}"`));
-        assert.match(get('math-problem').innerHTML,/<msubsup>/);
+        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level+1}"`));
+        assert.doesNotMatch(get('math-problem').innerHTML,/<msubsup>/);
+        const nodes=[...get('math-answers').children];
+        if(previousNodes)assert.ok(nodes.every((n,index)=>n!==previousNodes[index]),'runes are replaced after every answer');
+        if(i===level)assert.match(nodes[expected.correctIndices[i]].children[1].innerHTML,/<mi>C<\/mi>/);
         assert.doesNotMatch(get('math-problem').innerHTML,/□|왼쪽|실패/);
         nodes[expected.correctIndices[i]].click();
-        assert.deepEqual(get('math-answers').children,nodes);
-        assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
-        assert.equal(get('math-cast-hud').hidden,i===level-1);
+        previousNodes=nodes;
+        assert.equal(get('math-cast-hud').hidden,i===level);
       }
       assert.match(get('toast').textContent,/폭발시킬 위치/);
       canvas._listeners.get('pointermove')({clientX:650,clientY:350});
@@ -148,18 +149,18 @@ test('fireball assembles every rank with fixed runes, previews radius and explod
     get('restart').click();debug.dataset.fireballLevel='3';debug.click();key('3');key('d');
     for(let t=201;t<=651;t+=50){translations.length=0;frame(t);}
     listeners.get('keyup')({key:'d'});
-    const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
+    const expected=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
     for(const index of expected.correctIndices)get('math-answers').children[index].click();
     const target={clientX:translations[1][0]+translations[0][0],clientY:translations[1][1]+translations[0][1],preventDefault(){}};
     assert.ok(target.clientX>=0&&target.clientX<=960&&target.clientY>=0&&target.clientY<=600);
     canvas._listeners.get('pointerdown')(target);
     assert.match(get('toast').textContent,/2개체 타격 · 2마리 처치/,'both enemies take damage immediately, before a frame');
     frame(701);assert.equal(get('kills').textContent,2);assert.equal(get('xp-label').textContent,'12/24');
-    for(let position=0;position<3;position++){
+    for(let position=0;position<4;position++){
       get('restart').click();debug.dataset.fireballLevel='3';debug.click();get('fireball').click();
-      const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
+      const expected=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
+      for(let i=0;i<position;i++)get('math-answers').children[expected.correctIndices[i]].click();
       const nodes=get('math-answers').children;
-      for(let i=0;i<position;i++)nodes[expected.correctIndices[i]].click();
       nodes[(expected.correctIndices[position]+1)%5].click();
       assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
       key('Backspace');nodes[expected.correctIndices[position]].click();

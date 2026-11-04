@@ -1,20 +1,20 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.0';
-import { generateQuestion } from './problem-engine.js?v=1.5.0';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.1';
+import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.5.0';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.5.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
-import { polynomialMathML, problemMathML, boltSequenceMathML, definiteIntegralSequenceMathML } from './math-ui.js?v=1.5.0';
+import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.5.1';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
 import { pickEnemyAt } from './targeting.js';
-import { generateDefiniteIntegralSequence, answerDefiniteIntegral } from './definite-integral.js';
-import { generateBoltSequence, answerBolt } from './bolt-sequence.js';
+import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.5.1';
+import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.1';
 
 (() => {
 'use strict';
@@ -118,7 +118,7 @@ function begin(which) {
   if(gameOver || mode!=='idle') return;
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
-  integralSequence=which==='fireball'?generateDefiniteIntegralSequence(activeCastConfig.problem):null;
+  integralSequence=which==='fireball'?generateIntegralSequence(activeCastConfig.problem):null;
   boltSequence=which==='bolt'?generateBoltSequence(activeCastConfig.problem):null;
   question=boltSequence?boltSequence.question:integralSequence?integralSequence.question:generateQuestion(activeCastConfig.problem);mode='question';
   displayMathQuestion();
@@ -128,7 +128,7 @@ function displayMathQuestion(keepChoices=false) {
   const integral=spell==='fireball';
   dom.mathTitle.textContent=integral?'':
     boltSequence?'':'주문 완성';
-  dom.mathProblem.innerHTML=integral?definiteIntegralSequenceMathML(integralSequence):boltSequence?boltSequenceMathML(boltSequence):problemMathML(question,spell);
+  dom.mathProblem.innerHTML=integral?integralSequenceMathML(integralSequence):boltSequence?boltSequenceMathML(boltSequence):problemMathML(question,spell);
   dom.mathHud.dataset.terms=String(question.data.inputTerms.length);
   dom.mathHud.dataset.spell=spell;
   if(!keepChoices){
@@ -139,7 +139,7 @@ function displayMathQuestion(keepChoices=false) {
       button.setAttribute('aria-label',`${index+1}번: ${question.choices[index]}`);
       const key=document.createElement('span');key.className='answer-key';key.textContent=String(index+1);
       const formula=document.createElement('span');formula.className='answer-formula';
-      formula.innerHTML=polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index]);
+      formula.innerHTML=integral?integralChoiceMathML(question,index):polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index]);
       button.append(key,formula);
       button.addEventListener('click',()=>selectAnswer(index));
       dom.mathAnswers.append(button);
@@ -167,9 +167,9 @@ function selectAnswer(index) {
     if(result==='inactive')return;
   }
   if(integralSequence){
-    const result=answerDefiniteIntegral(integralSequence,index);
+    const result=answerIntegral(integralSequence,index);
     if(result==='next'){
-      displayMathQuestion(true);return;
+      displayMathQuestion();return;
     }
     if(result==='inactive')return;
   }

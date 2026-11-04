@@ -34,9 +34,9 @@ export const SPELLS = Object.freeze({
     // One basic slime's diameter (42 world pixels) as the explosion radius.
     radius: 42,
     problem: {
-      kind: 'definiteIntegral', termCount: 1, answerCount: 5,
-      coefficient: { min: -6, max: 6 }, exponent: { min: 0, max: 2 },
-      intervals: [[0,1],[0,2],[-1,1]], integerResults: true,
+      kind: 'monomialIntegral', termCount: 1, answerCount: 5,
+      coefficient: { min: -5, max: 5 }, exponent: { min: 0, max: 2 },
+      distractorWeights: DISTRACTOR_WEIGHTS,
     },
     levels: {
       2: { power: 30, problem: { termCount: 2 } },

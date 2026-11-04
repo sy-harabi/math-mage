@@ -1,90 +1,87 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { term, termKey } from '../src/monomial.js';
-import { generateDefiniteIntegralSequence, answerDefiniteIntegral, definiteIntegralOf, sumIntegralTerms } from '../src/definite-integral.js';
-import { definiteIntegralSequenceMathML } from '../src/math-ui.js';
+import { generateIntegralSequence, answerIntegral } from '../src/integral-sequence.js';
+import { integralSequenceMathML, integralChoiceMathML } from '../src/math-ui.js';
 import { getSpellAtLevel } from '../src/spells.js';
-import { generateQuestion } from '../src/problem-engine.js';
 import { resolveAreaHits } from '../src/combat.js';
 import { applyUpgrade, selectUpgradeChoices } from '../src/upgrades.js';
 const seeded=seed=>()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
 
-test('definite integrals handle constants, signs, fractions, symmetric intervals and cancellation exactly',()=>{
-  assert.deepEqual(definiteIntegralOf(term(3,1,2),0,2),term(8,1,0));
-  assert.deepEqual(definiteIntegralOf(term(-4,1,1),-1,1),term(0,1,0));
-  assert.deepEqual(definiteIntegralOf(term(-3,1,0),-1,1),term(-6,1,0));
-  assert.deepEqual(definiteIntegralOf(term(1,1,2),0,1),term(1,3,0));
-  assert.deepEqual(definiteIntegralOf(term(3,2,1),0,2),term(3,1,0));
-  assert.deepEqual(sumIntegralTerms([term(1,3,0),term(-1,3,0)]),term(0,1,0));
-});
-
-test('6000 ranked questions have correct integrals verified independently by Simpson quadrature',()=>{
+test('6000 ranked indefinite integrals differentiate back to their source and refresh five unique runes at every step',()=>{
   for(let level=1;level<=3;level++)for(let seed=0;seed<2000;seed++){
-    const spec=getSpellAtLevel('fireball',level).problem;
-    const seq=generateDefiniteIntegralSequence(spec,seeded(seed));
-    const {data,choices}=seq.question;
-    assert.equal(data.inputTerms.length,level);
-    assert.equal(choices.length,5);assert.equal(new Set(choices).size,5);
-    assert.equal(new Set(data.inputTerms.map(t=>t.power)).size,level);
-    let total=0;
-    data.inputTerms.forEach((t,i)=>{
-      const f=x=>t.num/t.den*x**t.power,a=data.lower,b=data.upper;
-      const expected=(b-a)/6*(f(a)+4*f((a+b)/2)+f(b));
-      const answer=data.contributions[i];
-      assert.ok(Math.abs(answer.num/answer.den-expected)<1e-9);
-      assert.equal(answer.den,1,'default contributions must be integers');
-      assert.equal(termKey(data.choiceTerms[seq.correctIndices[i]]),termKey(answer));
-      total+=expected;
-    });
-    assert.ok(Math.abs(data.answerTerms[0].num/data.answerTerms[0].den-total)<1e-9);
-    const generic=generateQuestion(spec,seeded(seed));
-    assert.equal(generic.choices[generic.correct],generic.answer);
-  }
-});
-
-test('constant terms and zero contributions still require a selection; duplicate answers reuse one rune',()=>{
-  let reused=false,zero=false;
-  for(let seed=0;seed<200;seed++){
-    const seq=generateDefiniteIntegralSequence({...getSpellAtLevel('fireball',3).problem,intervals:[[-1,1]]},seeded(seed));
-    assert.ok(seq.question.data.inputTerms.some(t=>t.power===0));
-    reused ||= new Set(seq.correctIndices).size<3;
-    zero ||= seq.question.data.contributions.some(t=>t.num===0);
-    const choices=seq.question.choices.slice();
-    for(let i=0;i<3;i++){
-      assert.equal(answerDefiniteIntegral(seq,seq.correctIndices[i]),i===2?'complete':'next');
-      assert.deepEqual(seq.question.choices,choices);
+    const seq=generateIntegralSequence(getSpellAtLevel('fireball',level).problem,seeded(seed));
+    assert.equal(seq.question.data.inputTerms.length,level);
+    assert.equal(seq.stages.length,level+1);
+    for(let step=0;step<=level;step++){
+      const q=seq.question;
+      assert.equal(q.choices.length,5);assert.equal(new Set(q.choices).size,5);
+      assert.equal(q.choices[q.correct],q.answer);
+      if(step<level){
+        const source=q.data.inputTerms[step],primitive=q.data.choiceTerms[q.correct];
+        assert.equal(q.data.choiceKinds[q.correct],'term');
+        assert.equal(primitive.power-1,source.power);
+        assert.equal(primitive.num*primitive.power*source.den,source.num*primitive.den);
+      }else{
+        assert.equal(seq.complete,false,'all polynomial terms alone must NOT cast');
+        assert.equal(seq.selectedConstant,false);
+        assert.equal(q.data.choiceKinds[q.correct],'constant');
+        assert.equal(q.answer,'+ C');
+      }
+      const oldChoices=q.choices;
+      assert.equal(answerIntegral(seq,q.correct),step===level?'complete':'next');
+      if(step<level){assert.notStrictEqual(q.choices,oldChoices);assert.notDeepEqual(q.choices,oldChoices);}
     }
-    assert.equal(seq.selectedTerms.length,3);assert.equal(answerDefiniteIntegral(seq,0),'inactive');
+    assert.equal(seq.selectedTerms.length,level);assert.equal(seq.selectedConstant,true);
+    assert.equal(seq.complete,true);assert.equal(answerIntegral(seq,0),'inactive');
   }
-  assert.ok(reused);assert.ok(zero);
 });
 
-test('a wrong rune at any position permanently fails the entire integral',()=>{
-  for(let position=0;position<3;position++){
-    const seq=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',3).problem,seeded(position));
-    for(let i=0;i<position;i++)assert.equal(answerDefiniteIntegral(seq,seq.correctIndices[i]),'next');
-    assert.equal(answerDefiniteIntegral(seq,(seq.correctIndices[position]+1)%5),'failed');
-    assert.equal(answerDefiniteIntegral(seq,seq.correctIndices[position]),'inactive');
+test('constants integrate to ax, fractional primitives stay exact, and premature +C fails',()=>{
+  const base=getSpellAtLevel('fireball',1).problem;
+  const seq=generateIntegralSequence({...base,coefficient:{min:3,max:3},exponent:{min:0,max:0}},()=>.25);
+  assert.deepEqual(seq.question.data.answerTerms,[term(3,1,1)]);
+  const premature=seq.question.data.choiceKinds.indexOf('constant');
+  assert.equal(answerIntegral(seq,premature),'failed');assert.equal(answerIntegral(seq,seq.question.correct),'inactive');
+  const fraction=generateIntegralSequence({...base,coefficient:{min:1,max:1},exponent:{min:2,max:2}},()=>.25);
+  assert.deepEqual(fraction.question.data.answerTerms,[term(1,3,3)]);
+  assert.match(integralChoiceMathML(fraction.question,fraction.question.correct),/<mfrac>/);
+  assert.equal(answerIntegral(fraction,fraction.question.correct),'next');
+  assert.equal(answerIntegral(fraction,fraction.question.correct),'complete');
+  assert.equal(fraction.selectedConstant,true);
+});
+
+test('a wrong first, middle or final +C selection permanently fails the entire cast',()=>{
+  for(let position=0;position<4;position++){
+    const seq=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,seeded(position));
+    for(let i=0;i<position;i++)assert.equal(answerIntegral(seq,seq.question.correct),'next');
+    assert.equal(answerIntegral(seq,(seq.question.correct+1)%5),'failed');
+    assert.equal(answerIntegral(seq,seq.question.correct),'inactive');
     assert.equal(seq.failed,true);assert.equal(seq.complete,false);
   }
 });
 
-test('integral MathML displays both bounds, highlighted source term, charge and partial sum without boxes or +C',()=>{
-  const seq=generateDefiniteIntegralSequence({...getSpellAtLevel('fireball',3).problem,intervals:[[-1,1]]},seeded(8));
-  const before=definiteIntegralSequenceMathML(seq);
-  assert.match(before,/<msubsup><mo>∫<\/mo><mn>-1<\/mn><mn>1<\/mn>/);
-  assert.match(before,/aria-valuenow="0"/);assert.match(before,/aria-valuemax="3"/);assert.doesNotMatch(before,/□/);assert.match(before,/integral-current-term/);
-  answerDefiniteIntegral(seq,seq.correctIndices[0]);
-  const after=definiteIntegralSequenceMathML(seq);
-  assert.match(after,/aria-valuenow="1"/);assert.doesNotMatch(after,/□|왼쪽|실패/);
-  assert.doesNotMatch(after,/<mi>C<\/mi>/);
+test('MathML has no integration bounds or boxes; +C appears exactly once only after its own selection',()=>{
+  const seq=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,seeded(8));
+  const before=integralSequenceMathML(seq);
+  assert.match(before,/<mo>∫<\/mo>/);assert.doesNotMatch(before,/<msubsup>|□|<mi>C<\/mi>/);
+  assert.match(before,/aria-valuemax="4"/);assert.match(before,/integral-current-term/);
+  for(let i=0;i<3;i++){
+    answerIntegral(seq,seq.question.correct);
+    assert.doesNotMatch(integralSequenceMathML(seq),/<mi>C<\/mi>/);
+  }
+  const cMarkup=integralChoiceMathML(seq.question,seq.question.correct);
+  assert.match(cMarkup,/<mo>\+<\/mo><mi>C<\/mi>/);assert.doesNotMatch(cMarkup,/<mn>0<\/mn>/);
+  answerIntegral(seq,seq.question.correct);
+  assert.equal((integralSequenceMathML(seq).match(/<mi>C<\/mi>/g)??[]).length,1);
+  assert.match(integralSequenceMathML(seq),/aria-valuenow="4"/);
 });
 
-test('fireball ranks retain radius 42 and damage 10/30/70; polynomial has 1/2/3 terms',()=>{
+test('fireball retains radius 42, damage 10/30/70 and indefinite polynomial term counts 1/2/3',()=>{
   for(let level=1;level<=3;level++){
     const config=getSpellAtLevel('fireball',level);
     assert.equal(config.radius,42);assert.equal(config.power,[10,30,70][level-1]);
-    assert.equal(config.problem.termCount,level);assert.equal(config.problem.kind,'definiteIntegral');
+    assert.equal(config.problem.termCount,level);assert.equal(config.problem.kind,'monomialIntegral');
   }
 });
 

@@ -1,4 +1,4 @@
-import { generateQuestion } from './problem-engine.js?v=bolt-terms-1';
+import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { termKey, termText } from './monomial.js';
 
 /** Five fixed term runes; build the derivative from left to right. */
