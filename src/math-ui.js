@@ -33,3 +33,20 @@ export function problemMathML(q, spell) {
   }
   return math(`${mo('∫')}${polyBody}${mi('d')}${mi('x')}${mo('=')}${mo('?')}`);
 }
+
+/** Show the active source term and the derivative assembled so far. */
+export function boltSequenceMathML(sequence) {
+  const { question, selectedTerms, index } = sequence;
+  const input = question.data.inputTerms.map((t, i) => {
+    const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
+    return i === sequence.sourceIndices[index] ? `<mstyle class="bolt-current-term" mathcolor="#ffe17c">${body}</mstyle>` : body;
+  }).join('');
+  const result = sequence.correctIndices.map((_, i) => {
+    const t = selectedTerms[i];
+    return t ? `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}` :
+      `${i ? mo('+') : ''}${mo('□')}`;
+  }).join('');
+  return math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`) +
+    math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result}`) +
+    '<span class="bolt-build-hint">왼쪽 항부터 선택 · 한 번 틀리면 실패</span>';
+}

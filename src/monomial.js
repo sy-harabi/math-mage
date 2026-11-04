@@ -42,6 +42,7 @@ export function termText(raw) {
 }
 
 export function derivativeOf(a, n) {
+  if (n === 0) return term(0, 1, 0);
   return term(a * n, 1, n - 1);
 }
 

@@ -1,4 +1,4 @@
-import { term, termText, derivativeOf, integralOf } from './monomial.js';
+import { term, termText, derivativeOf, integralOf } from './monomial.js?v=constant-derivative-1';
 import { normalizePolynomial, polynomialKey, polynomialText, polynomialChoiceLines } from './polynomial.js';
 
 /**
@@ -111,7 +111,7 @@ function polynomialQuestion(spec, rng, kind) {
   const derivative = kind === 'monomialDerivative';
   const coefRange = integerRange(spec.coefficient, 'coefficient');
   const powRange = integerRange(spec.exponent, 'exponent');
-  if (powRange.min < (derivative ? 1 : 0)) throw new Error('허용되지 않는 차수입니다.');
+  if (powRange.min < 0) throw new Error('허용되지 않는 차수입니다.');
   const coefficients = [];
   for (let a = coefRange.min; a <= coefRange.max; a++) {
     if (a !== 0) coefficients.push(a);
@@ -137,7 +137,8 @@ function polynomialQuestion(spec, rng, kind) {
     input.push({a,n});
   }
   input.sort((a,b)=>b.n-a.n);
-  const correctTerms = normalizePolynomial(input.map(({a,n}) => derivative ? derivativeOf(a,n) : integralOf(a,n)));
+  const normalizedAnswer = normalizePolynomial(input.map(({a,n}) => derivative ? derivativeOf(a,n) : integralOf(a,n)));
+  const correctTerms = normalizedAnswer.length ? normalizedAnswer : [term(0,1,0)];
   const withConstant = !derivative;
   const keyOf = (terms, hasConstant) => `${polynomialKey(terms)}:${hasConstant}`;
   const answerKey=keyOf(correctTerms,withConstant);
@@ -154,6 +155,14 @@ function polynomialQuestion(spec, rng, kind) {
   const changeTerm = (index, replacement) => correctTerms.map((t,i)=>i===index?replacement:t);
   for (let j=0;j<input.length;j++) {
     const {a,n}=input[j];
+    if (derivative && n === 0) {
+      // Constants disappear; retaining them or differentiating to x is a mistake.
+      push('formula',[...correctTerms,term(a,1,0)]);
+      push('formula',[...correctTerms,term(a,1,1)]);
+      push('signConstant',[...correctTerms,term(-a,1,0)]);
+      for(const delta of [-3,-2,-1,1,2,3])push('arithmetic',[...correctTerms,term(delta,1,0)]);
+      continue;
+    }
     const correct=derivative?derivativeOf(a,n):integralOf(a,n);
     // Index j is stable because the original exponents were distinct and sorted.
     const wrongFormula = derivative ? [

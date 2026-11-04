@@ -85,6 +85,8 @@
 .math-cast-hud[data-terms="2"] .math-problem math{font-size:16px}
 .math-cast-hud[data-terms="3"] .math-problem math{font-size:18.2px}
 .math-hint{font-size:10px;color:#bcd7f2}
+.bolt-current-term{color:#ffe17c}
+.bolt-build-hint{font-size:10px;color:#ffe5a1;white-space:nowrap}
 .math-answers{position:absolute;inset:0;pointer-events:none}
 .math-choice{
   position:absolute;width:204px;height:66px;min-height:0;

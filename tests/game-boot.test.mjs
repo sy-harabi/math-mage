@@ -148,3 +148,59 @@ test('fireball Lv3 swaps only the central question, permits movement, launches a
   assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
   key('3');assert.match(get('toast').textContent,/쿨타임/);
 });
+
+test('bolt event flow keeps five runes, assembles every rank, and fails immediately at any step',async()=>{
+  const {generateBoltSequence}=await import('../src/bolt-sequence.js');
+  const {getSpellAtLevel}=await import('../src/spells.js');
+  const elements=new Map();
+  const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
+  const debug=makeElement('debug');debug.dataset.boltLevel='3';
+  const canvas=get('game');canvas.width=960;canvas.height=600;
+  canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
+  const listeners=new Map();let frame;
+  globalThis.window={location:{search:'?debug=1'},addEventListener:(k,f)=>listeners.set(k,f)};
+  globalThis.document={getElementById:get,createElement:makeElement,
+    querySelectorAll:selector=>selector==='[data-bolt-level]'?[debug]:[],addEventListener:()=>{},hidden:false};
+  globalThis.requestAnimationFrame=fn=>{frame=fn;};
+  const key=key=>listeners.get('keydown')({key,repeat:false,preventDefault(){}});
+  const random=Math.random;Math.random=()=>.25;
+  try{
+    await import('../src/game.js?bolt-events');
+    for(let level=1;level<=3;level++){
+      get('restart').click();debug.dataset.boltLevel=String(level);debug.click();get('bolt').click();
+      const expected=generateBoltSequence(getSpellAtLevel('bolt',level).problem,()=>.25);
+      const nodes=[...get('math-answers').children];
+      const formulas=nodes.map(n=>n.children[1].innerHTML);
+      assert.equal(nodes.length,5);
+      const left=get('rune-frame').style.left;
+      key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
+      assert.equal(get('rune-frame').style.left,left);
+      for(let i=0;i<level;i++){
+        assert.match(get('math-title').textContent,new RegExp(`${i+1}/${level}`));
+        assert.equal((get('math-problem').innerHTML.match(/□/g)??[]).length,level-i);
+        if(i%2)key(String(expected.correctIndices[i]+1));else nodes[expected.correctIndices[i]].click();
+        assert.deepEqual(get('math-answers').children,nodes);
+        assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
+        assert.equal(get('math-cast-hud').hidden,i===level-1);
+      }
+      assert.match(get('toast').textContent,/번개를 맞힐 적/);
+      key('Escape');assert.equal(get('math-cast-hud').hidden,true);
+    }
+    for(let position=0;position<3;position++){
+      get('restart').click();debug.dataset.boltLevel='3';debug.click();key('1');
+      const expected=generateBoltSequence(getSpellAtLevel('bolt',3).problem,()=>.25);
+      const nodes=[...get('math-answers').children];
+      for(let i=0;i<position;i++)nodes[expected.correctIndices[i]].click();
+      nodes[(expected.correctIndices[position]+1)%5].click();
+      assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
+      key('Backspace');nodes[expected.correctIndices[position]].click();
+      assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
+      key('1');assert.match(get('toast').textContent,/쿨타임/);
+    }
+    get('restart').click();debug.click();key('1');key('Escape');
+    assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/마법 취소/);
+    get('restart').click();debug.click();key('1');
+    assert.match(get('math-title').textContent,/1\/3/);
+    assert.equal((get('math-problem').innerHTML.match(/□/g)??[]).length,3);
+  }finally{Math.random=random;}
+});

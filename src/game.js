@@ -1,5 +1,5 @@
 import { SPELLS, getSpellAtLevel } from './spells.js?v=1.4.1';
-import { generateQuestion } from './problem-engine.js';
+import { generateQuestion } from './problem-engine.js?v=bolt-terms-1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
@@ -7,13 +7,14 @@ import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComple
 import { createProgression, addXp, xpToNext } from './progression.js';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.4.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
-import { polynomialMathML, problemMathML } from './math-ui.js';
+import { polynomialMathML, problemMathML, boltSequenceMathML } from './math-ui.js?v=bolt-terms-1';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
 import { pickEnemyAt } from './targeting.js';
 import { generateConceptSequence, answerConcept } from './concept-questions.js?v=1.4.1';
+import { generateBoltSequence, answerBolt } from './bolt-sequence.js';
 
 (() => {
 'use strict';
@@ -42,7 +43,7 @@ const dom = {
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
-let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, conceptSequence, fireballs, explosions;
+let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, conceptSequence, boltSequence, fireballs, explosions;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
 let pointer = null;
@@ -71,7 +72,7 @@ function newPlayer() {
 }
 function reset() {
   p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; fireballs=[]; explosions=[]; conceptSequence=null;
-  kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; touchTarget=null;
+  kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
   pointer=null;
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
@@ -118,14 +119,16 @@ function begin(which) {
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
   conceptSequence=which==='fireball'?generateConceptSequence(activeCastConfig.problem):null;
-  question=conceptSequence?conceptSequence.questions[0]:generateQuestion(activeCastConfig.problem);mode='question';
+  boltSequence=which==='bolt'?generateBoltSequence(activeCastConfig.problem):null;
+  question=boltSequence?boltSequence.question:conceptSequence?conceptSequence.questions[0]:generateQuestion(activeCastConfig.problem);mode='question';
   displayMathQuestion();
-  say(which==='fireball'?'빈칸을 완성하세요. 한 번 틀리면 주문 실패!':which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2);
+  say(which==='fireball'?'빈칸을 완성하세요. 한 번 틀리면 주문 실패!':which==='bolt'?'왼쪽 항부터 도함수를 조합하세요. 한 번 틀리면 주문 실패!':'부정적분을 구하세요.',2);
 }
 function displayMathQuestion(keepChoices=false) {
   const concept=spell==='fireball';
-  dom.mathTitle.textContent=concept?`파이어볼 · ${conceptSequence.index+1}/${conceptSequence.questions.length} · ${question.name}`:'주문 완성';
-  dom.mathProblem.innerHTML=concept?question.html:problemMathML(question,spell);
+  dom.mathTitle.textContent=concept?`파이어볼 · ${conceptSequence.index+1}/${conceptSequence.questions.length} · ${question.name}`:
+    boltSequence?`번개 · 항 조합 ${boltSequence.index+1}/${boltSequence.correctIndices.length}`:'주문 완성';
+  dom.mathProblem.innerHTML=concept?question.html:boltSequence?boltSequenceMathML(boltSequence):problemMathML(question,spell);
   dom.mathHud.dataset.terms=concept?'concept':String(question.data.inputTerms.length);
   dom.mathHud.dataset.spell=spell;
   if(!keepChoices){
@@ -148,7 +151,7 @@ function displayMathQuestion(keepChoices=false) {
 function endCast() {
   dom.mathHud.hidden=true;
   if(spell)p.cd[spell]=SPELLS[spell].cooldownSeconds*cooldownMultiplier(p);
-  mode='idle';spell=null;question=null;activeCastConfig=null;conceptSequence=null;
+  mode='idle';spell=null;question=null;activeCastConfig=null;conceptSequence=null;boltSequence=null;
   checkMilestones();
 }
 function cancel() {if(mode!=='question'&&mode!=='target')return;say('마법 취소');endCast();}
@@ -158,6 +161,11 @@ function sparkle(x,y,color,count=16) {
 }
 function selectAnswer(index) {
   if(mode!=='question')return;
+  if(boltSequence){
+    const result=answerBolt(boltSequence,index);
+    if(result==='next'){displayMathQuestion(true);return;}
+    if(result==='inactive')return;
+  }
   if(conceptSequence){
     const result=answerConcept(conceptSequence,index);
     if(result==='next'){
