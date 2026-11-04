@@ -5,6 +5,8 @@ import { normalizePolynomial } from './polynomial.js';
 function mn(n) { return `<mn>${n}</mn>`; }
 function mi(s) { return `<mi>${s}</mi>`; }
 function mo(s) { return `<mo>${s}</mo>`; }
+const differential = () => '<mi mathvariant="normal">d</mi>';
+const derivativeOperator = () => `<mfrac>${differential()}<mrow>${differential()}${mi('x')}</mrow></mfrac>`;
 function math(body) {
   return `<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow>${body}</mrow></math>`;
 }
@@ -27,8 +29,8 @@ export function problemMathML(q, spell) {
   const input = normalizePolynomial(q.data.inputTerms);
   const polyBody = polynomialMathML(input).replace(/^.*?<mrow>/,'').replace(/<\/mrow><\/math>$/,'');
   if (spell === 'bolt') {
-    const func = math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${polyBody}`);
-    const result = math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${mo('?')}`);
+    const func = math(`${derivativeOperator()}${mo('(')}${polyBody}${mo(')')}`);
+    const result = math(`${mo('=')}${mo('?')}`);
     return func + result;
   }
   return math(`${mo('∫')}${polyBody}${mi('d')}${mi('x')}${mo('=')}${mo('?')}`);
@@ -41,30 +43,30 @@ export function boltSequenceMathML(sequence,spellName='번개') {
     const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
     const active = i === sequence.sourceIndices[index];
     const done = sequence.sourceIndices.slice(0, index).includes(i);
-    return `<mstyle class="bolt-source-term${active ? ' bolt-current-term' : done ? ' is-done' : ''}" mathcolor="${active ? '#ffe17c' : done ? '#738ca5' : '#d8e6f4'}">${body}</mstyle>`;
+    return `<mstyle class="bolt-source-term${active ? ' bolt-current-term' : done ? ' is-done' : ''}"${active ? ' mathsize="112%"' : ''} mathcolor="${active ? '#ffe17c' : done ? '#738ca5' : '#a4b4c8'}">${body}</mstyle>`;
   }).join('');
   const result = selectedTerms.map((t, i) => {
     const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
-    return `<mstyle class="bolt-formed-term${i === selectedTerms.length - 1 ? ' is-new' : ''}">${body}</mstyle>`;
+    return `<mstyle class="bolt-formed-term ritual-formed-term${i === selectedTerms.length - 1 ? ' is-new' : ''}">${body}</mstyle>`;
   }).join('');
   const charge = sequence.correctIndices.map((_, i) =>
     `<span class="bolt-step${i < index ? ' is-filled' : i === index ? ' is-current' : ''}"></span>`).join('');
   return `<div class="bolt-charge" role="progressbar" aria-label="${spellName}" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>` +
-    `<div class="bolt-source">${math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`)}</div>` +
-    `<div class="bolt-answer${selectedTerms.length ? '' : ' is-empty'}">${math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result || '<mspace width="1.5em"/>'}`)}</div>`;
+    `<div class="bolt-source">${math(`${derivativeOperator()}${mo('(')}${input}${mo(')')}`)}</div>` +
+    `<div class="bolt-answer${selectedTerms.length ? '' : ' is-empty'}">${math(`${mo('=')}${result || '<mspace width="1.5em"/>'}`)}</div>`;
 }
 
 export function integralSequenceMathML(sequence,spellName='파이어볼') {
   const {question,selectedTerms,index}=sequence;
   const input=question.data.inputTerms.map((t,i)=>{
     const body=`${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`;
-    return `<mstyle class="integral-source-term${i===index?' integral-current-term':i<index?' is-done':''}" mathcolor="${i===index?'#ffc18e':i<index?'#738ca5':'#d8e6f4'}">${body}</mstyle>`;
+    return `<mstyle class="integral-source-term${i===index?' integral-current-term':i<index?' is-done':''}"${i===index?' mathsize="112%"':''} mathcolor="${i===index?'#ffc18e':i<index?'#738ca5':'#a4b4c8'}">${body}</mstyle>`;
   }).join('');
-  const pieces=selectedTerms.map((t,i)=>`${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`).join('');
+  const pieces=selectedTerms.map((t,i)=>`<mstyle class="ritual-formed-term${i===selectedTerms.length-1&&!sequence.selectedConstant?' is-new':''}">${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}</mstyle>`).join('');
   const charge=sequence.correctIndices.map((_,i)=>`<span class="bolt-step${i<index?' is-filled':i===index?' is-current':''}"></span>`).join('');
-  const constant=sequence.selectedConstant?`${mo('+')}${mi('C')}`:'';
+  const constant=sequence.selectedConstant?`<mstyle class="ritual-formed-term ritual-constant is-new">${mo('+')}${mi('C')}</mstyle>`:'';
   return `<div class="bolt-charge" role="progressbar" aria-label="${spellName}" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>`+
-    math(`${mo('∫')}${mo('(')}${input}${mo(')')}${mi('d')}${mi('x')}`)+
+    `<div class="bolt-source">${math(`${mo('∫')}${mo('(')}${input}${mo(')')}${differential()}${mi('x')}`)}</div>`+
     `<div class="bolt-answer${selectedTerms.length?'':' is-empty'}">${math(`${mo('=')}${pieces||'<mspace width="1.5em"/>'}${constant}`)}</div>`;
 }
 

@@ -52,7 +52,10 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
 .bolt-step{width:6px;height:6px;transform:rotate(45deg);border:1px solid #50627a;background:#122038}
 .bolt-step.is-current{border-color:var(--rune);background:var(--rune);box-shadow:0 0 7px var(--rune-soft)}.bolt-step.is-filled{border-color:var(--rune);background:var(--rune-soft)}
 .bolt-current-term,.integral-current-term{color:var(--rune);text-shadow:none}.bolt-source-term.is-done,.integral-source-term.is-done{color:#728299}
-.bolt-answer{min-height:33px;color:var(--rune)}.bolt-answer math{color:var(--rune)}.bolt-formed-term.is-new{animation:rune-form .2s ease-out}
+.bolt-answer{min-height:33px;color:var(--rune)}.bolt-answer math{color:var(--rune)}.ritual-formed-term.is-new{animation:rune-form .23s ease-out}
+.ritual-flight,.ritual-echo{position:fixed;z-index:5;display:flex;align-items:center;justify-content:center;pointer-events:none;user-select:none;transform-origin:center;text-shadow:0 0 12px currentColor;will-change:transform,opacity}
+.ritual-flight math,.ritual-echo math{font-size:inherit;color:inherit;white-space:nowrap;margin:0}
+@media(prefers-reduced-motion:reduce){.ritual-formed-term.is-new{animation:none}}
 @keyframes rune-form{from{opacity:.35}to{opacity:1}}
 .math-answers{position:absolute;inset:0;pointer-events:none}
 .math-choice{position:absolute;width:112px;height:94px;min-height:0;transform:translate(-50%,-50%);padding:12px 9px;display:flex;align-items:center;justify-content:center;gap:0;background:#0a1023f5;color:#f4f7ff;border:1.5px solid var(--rune);border-radius:50%;box-shadow:0 0 0 4px #080d2070,0 0 10px var(--rune-soft);cursor:pointer;pointer-events:auto;user-select:none;transition:box-shadow .12s,background .12s}

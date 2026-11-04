@@ -8,7 +8,8 @@ import { updateRockSlime } from './rock-slime.js?v=1.10.1';
 import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js?v=1.8.1';
-import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.9.2';
+import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.11.0';
+import { captureRuneChoice, animateRuneChoice, clearRitualFeedback } from './ritual-feedback.js?v=1.11.0';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
@@ -89,6 +90,7 @@ function newPlayer() {
     cd:{bolt:0,heal:0,fireball:0,shield:0}, levels:{bolt:1,heal:0,fireball:0,shield:0}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
 function resetEncounter() {
+  clearRitualFeedback();
   runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
@@ -132,6 +134,7 @@ function updateHiddenPhase() {
 }
 function completeRun() {
   if(mode==='victory')return;
+  clearRitualFeedback();
   finishRunTimer(runTimer);
   mode='victory';spell=null;question=null;activeCastConfig=null;
   touchTarget=null;keys.clear();dom.mathHud.hidden=true;
@@ -167,6 +170,7 @@ function begin(which) {
   if(gameOver || mode!=='idle') return;
   if(!(p.levels[which]>0)) return;
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
+  clearRitualFeedback();
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
   integralSequence=activeCastConfig.problem.kind==='monomialIntegral'?generateIntegralSequence(activeCastConfig.problem):null;
   boltSequence=activeCastConfig.problem.kind==='monomialDerivative'?generateBoltSequence(activeCastConfig.problem):null;
@@ -206,27 +210,26 @@ function endCast() {
   mode='idle';spell=null;question=null;activeCastConfig=null;integralSequence=null;boltSequence=null;
   checkMilestones();
 }
-function cancel() {if(mode!=='question'&&mode!=='target')return;say('마법 취소');endCast();}
+function cancel() {if(mode!=='question'&&mode!=='target')return;clearRitualFeedback();say('마법 취소');endCast();}
 function sparkle(x,y,color,count=16) {
   for(let i=0;i<count;i++){const a=Math.random()*TWO,s=rnd(50,240);
     particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.4,max:.75,color});}
 }
 function selectAnswer(index) {
   if(mode!=='question')return;
-  if(boltSequence){
-    const result=answerBolt(boltSequence,index);
-    if(result==='next'){displayMathQuestion();return;}
-    if(result==='inactive')return;
-  }
-  if(integralSequence){
-    const result=answerIntegral(integralSequence,index);
-    if(result==='next'){
-      displayMathQuestion();return;
+  const source=captureRuneChoice(dom.mathAnswers.children[index]);
+  if(boltSequence||integralSequence){
+    const result=boltSequence?answerBolt(boltSequence,index):answerIntegral(integralSequence,index);
+    if(result==='next'||result==='complete'){
+      displayMathQuestion(result==='complete');
+      animateRuneChoice(source,dom.mathProblem,result==='complete');
+      if(result==='next')return;
     }
     if(result==='inactive')return;
   }
   dom.mathHud.hidden=true;
   if(index!==question.correct){
+    clearRitualFeedback();
     sparkle(p.x,p.y,'#ff6988',12);p.failSlow=FAIL_SLOW_SECONDS;
     say(`오답! 정답 ${question.answer} · 1.5초 이동 감속`,3);endCast();return;
   }
@@ -312,6 +315,7 @@ function hurtPlayer(amount, message) {
   }
   sparkle(p.x,p.y,'#ff8a8a',9);say(`${message} · HP -${hit.damage}`,1.5);
   if(p.hp<=0){
+    clearRitualFeedback();
     gameOver=true;finishRunTimer(runTimer);mode='idle';spell=null;question=null;activeCastConfig=null;
     touchTarget=null;keys.clear();dom.mathHud.hidden=true;
     dom.deathTime.textContent=formatRunTime(runTimer.elapsedSeconds);
