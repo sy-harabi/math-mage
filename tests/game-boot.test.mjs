@@ -504,3 +504,53 @@ test('healing uses refreshed fireball-style integral runes, requires +C, and hea
   }finally{Math.random=random;}
 });
 
+
+test('end screens freeze their times and export the matching result through both capture buttons',async()=>{
+  const {advanceRunTimer}=await import('../src/speedrun.js');
+  const elements=new Map(),downloads=[],captureLabels=[];
+  const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
+  const context=new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
+  const captureContext=new Proxy({},{get:(o,k)=>o[k]??((...args)=>{if(k==='fillText')captureLabels.push(args[0]);})});
+  let encode=true;
+  const captureCanvas={getContext:()=>captureContext,toBlob(callback,type){callback(encode?new Blob(['png'],{type}):null);}};
+  const canvas=get('game');canvas.width=960;canvas.height=600;canvas.getContext=()=>context;
+  globalThis.window={location:{search:''},addEventListener(){}};
+  globalThis.document={getElementById:get,createElement(tag){
+    if(tag==='canvas')return captureCanvas;
+    if(tag==='a')return {click(){downloads.push(this.download);},remove(){}};
+    return makeElement(tag);
+  },body:{append(){}},querySelectorAll:()=>[],addEventListener(){},hidden:false};
+  globalThis.requestAnimationFrame=()=>{};
+  const hook=`globalThis.__captureTest={get state(){return {p,runTimer,mode,gameOver};},reset,completeRun,hurtPlayer};`;
+  const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+    .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
+    .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);');
+  try{
+    await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+    const t=globalThis.__captureTest;
+    // Saving during normal combat has no effect.
+    await get('victory-capture')._listeners.get('click')();assert.equal(downloads.length,0);
+    for(const outcome of ['victory','death']){
+      t.reset();t.state.runTimer.elapsedSeconds=83.45;
+      if(outcome==='victory')t.completeRun();else t.hurtPlayer(1000,'test');
+      const prefix=outcome==='victory'?'victory':'death';
+      assert.equal(get(prefix+'-overlay').hidden,false);
+      assert.equal(get(prefix+'-time').textContent,'01:23.45');
+      assert.equal(advanceRunTimer(t.state.runTimer,1000),83.45);
+      assert.equal(t.state.runTimer.finished,true);
+      const button=get(prefix+'-capture');
+      await button._listeners.get('click')();
+      assert.equal(button.disabled,false);assert.match(button.textContent,/저장 완료/);
+      assert.equal(downloads.at(-1),`abracalculus-${outcome==='victory'?'clear':'game-over'}-01m23s45.png`);
+      assert.ok(captureLabels.includes('01:23.45'));
+      assert.ok(captureLabels.includes(outcome==='victory'?'슬라임 군주 격파!':'GAME OVER'));
+    }
+    encode=false;
+    await get('death-capture')._listeners.get('click')();
+    assert.equal(get('death-capture').disabled,false);assert.match(get('death-capture').textContent,/다시 시도/);
+    assert.equal(downloads.length,2);
+    get('death-restart').click();
+    assert.equal(get('death-overlay').hidden,true);assert.equal(get('victory-overlay').hidden,true);
+    assert.equal(t.state.runTimer.elapsedSeconds,0);assert.equal(t.state.gameOver,false);
+  }finally{delete globalThis.__captureTest;}
+});

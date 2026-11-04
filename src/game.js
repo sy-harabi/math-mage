@@ -18,6 +18,7 @@ import { pickEnemyAt } from './targeting.js?v=1.9.0';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
 import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 import { grantShield, applyPlayerHit } from './shield.js';
+import { downloadResultCapture } from './result-capture.js?v=1.10.0';
 import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser, drawRockWarning } from './neon-renderer.js?v=1.9.0';
 
 (() => {
@@ -47,6 +48,10 @@ const dom = {
   upgradeHeading: document.getElementById('upgrade-heading'), upgradeOptions: document.getElementById('upgrade-options'),
   victoryOverlay: document.getElementById('victory-overlay'), victoryTime: document.getElementById('victory-time'),
   victoryStats: document.getElementById('victory-stats'), victoryRestart:document.getElementById('victory-restart'),
+  victoryCapture:document.getElementById('victory-capture'),
+  deathOverlay:document.getElementById('death-overlay'),deathTime:document.getElementById('death-time'),
+  deathStats:document.getElementById('death-stats'),deathRestart:document.getElementById('death-restart'),
+  deathCapture:document.getElementById('death-capture'),
   mathHud: document.getElementById('math-cast-hud'), runeFrame: document.getElementById('rune-frame'),
   mathProblem: document.getElementById('math-problem'), mathAnswers: document.getElementById('math-answers'),
 };
@@ -55,7 +60,7 @@ const keys = new Set();
 let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, integralSequence, boltSequence, explosions;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
-let pointer = null;
+let pointer = null, capturePending = false;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
@@ -88,7 +93,8 @@ function resetEncounter() {
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
   pointer=null;keys.clear();
-  dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
+  dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.deathOverlay.hidden=true;dom.mathHud.hidden=true;
+  dom.victoryCapture.textContent=dom.deathCapture.textContent='캡처 저장 (PNG)';
 }
 function reset() {
   p = newPlayer(); progression = createProgression(); resetEncounter();
@@ -132,6 +138,22 @@ function completeRun() {
   dom.victoryTime.textContent=formatRunTime(runTimer.elapsedSeconds);
   dom.victoryStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
   dom.victoryOverlay.hidden=false;
+}
+async function captureResult() {
+  if(capturePending||(!gameOver&&mode!=='victory'))return;
+  const button=gameOver?dom.deathCapture:dom.victoryCapture;
+  capturePending=true;button.disabled=true;button.textContent='저장 중…';
+  const result={outcome:gameOver?'death':'victory',elapsedSeconds:runTimer.elapsedSeconds,
+    kills,level:progression.level};
+  try {
+    draw(); // Refresh the final arena even if the finishing blow happened between frames.
+    await downloadResultCapture(C,result);
+    button.textContent='저장 완료 · 다시 저장';
+  } catch {
+    button.textContent='저장 실패 · 다시 시도';
+  } finally {
+    capturePending=false;button.disabled=false;
+  }
 }
 function spawnEnemy(type, x, y) {
   const pos = (Number.isFinite(x) && Number.isFinite(y)) ? {x,y} : chooseSpawnPosition(
@@ -289,7 +311,13 @@ function hurtPlayer(amount, message) {
     sparkle(p.x,p.y-25,'#9bf4ff',18);say(`보호막 파괴 · ${p.shields}회 남음`,1.5);return true;
   }
   sparkle(p.x,p.y,'#ff8a8a',9);say(`${message} · HP -${hit.damage}`,1.5);
-  if(p.hp<=0){gameOver=true;finishRunTimer(runTimer);mode='idle';dom.mathHud.hidden=true;say('게임 오버 · 다시 시작을 누르세요',10000);}
+  if(p.hp<=0){
+    gameOver=true;finishRunTimer(runTimer);mode='idle';spell=null;question=null;activeCastConfig=null;
+    touchTarget=null;keys.clear();dom.mathHud.hidden=true;
+    dom.deathTime.textContent=formatRunTime(runTimer.elapsedSeconds);
+    dom.deathStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
+    dom.deathOverlay.hidden=false;say('',0);
+  }
   return true;
 }
 function handleMelee(e,wd) {
@@ -465,6 +493,9 @@ window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
 window.addEventListener('blur',()=>{keys.clear();pointer=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.victoryRestart.addEventListener('click',reset);
+dom.deathRestart.addEventListener('click',reset);
+dom.victoryCapture.addEventListener('click',captureResult);
+dom.deathCapture.addEventListener('click',captureResult);
 for(const name of [...SKILL_IDS,'cancel','restart']){
   dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),fireball:()=>begin('fireball'),shield:()=>begin('shield'),cancel,restart:reset})[name]());
 }
@@ -579,12 +610,6 @@ function draw(){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
     label(spell==='fireball'?'파이어볼 대기 중 — 폭발시킬 위치를 클릭하세요':'번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
     if(selected)circle(selected.x-camera.x,selected.y-camera.y-(selected.jumpHeight||0),selected.r+8,null,'#ffe388',3);
-  }
-  if(gameOver){
-    ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);
-    label('GAME OVER',W/2,H/2-25,48);
-    label(`생존 ${formatRunTime(runTimer.elapsedSeconds)} · Lv${progression.level} · ${kills}마리 처치`,W/2,H/2+35,20,'#c6d8ef');
-    label('다시 시작 버튼이나 R 키를 누르세요',W/2,H/2+72,17,'#c6d8ef');
   }
 }
 function updateUI(){

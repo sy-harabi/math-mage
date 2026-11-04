@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>아브라칼큘러스!</title>
-<link rel="stylesheet" href="./src/styles.css?v=1.9.1">
+<link rel="stylesheet" href="./src/styles.css?v=1.10.0">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -40,7 +40,13 @@
 <div id="victory-overlay" class="game-overlay" hidden>
   <div class="overlay-panel victory-panel"><h2>슬라임 군주 격파!</h2><p>스피드런 클리어 기록</p>
     <strong id="victory-time">00:00.00</strong><p id="victory-stats"></p>
-    <button type="button" id="victory-restart">다시 도전</button>
+    <div class="result-actions"><button type="button" id="victory-capture">캡처 저장 (PNG)</button><button type="button" id="victory-restart">다시 도전</button></div>
+  </div>
+</div>
+<div id="death-overlay" class="game-overlay" hidden>
+  <div class="overlay-panel victory-panel death-panel"><h2>GAME OVER</h2><p>최종 생존 기록</p>
+    <strong id="death-time">00:00.00</strong><p id="death-stats"></p>
+    <div class="result-actions"><button type="button" id="death-capture">캡처 저장 (PNG)</button><button type="button" id="death-restart">다시 도전</button></div>
   </div>
 </div>
 </div>
@@ -60,5 +66,5 @@
 <div id="shield-level-picker" class="debug-level-picker" role="group" hidden aria-label="보호막 스킬 레벨 체험"><strong>보호막 레벨 체험</strong><button type="button" data-shield-level="1">Lv1 · 1회 방어</button><button type="button" data-shield-level="2">Lv2 · 2회 방어</button><button type="button" data-shield-level="3">Lv3 · 3회 방어</button></div>
 <div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 </div>
-<script type="module" src="./src/game.js?v=1.9.2"></script></body></html>
+<script type="module" src="./src/game.js?v=1.10.0"></script></body></html>
 
