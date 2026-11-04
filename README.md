@@ -1,4 +1,4 @@
-# 계산 마법사 (Math Mage) — v1.3 (PC 전용)
+# 계산 마법사 (Math Mage) — v1.3.1 (PC 전용)
 
 [게임 플레이](https://sy-harabi.github.io/math-mage/) · [소스코드](https://github.com/sy-harabi/math-mage)
 
@@ -24,3 +24,7 @@ PC 브라우저에서 WASD·방향키 또는 마우스 클릭으로 이동하며
 - 테스트: `npm test`; 정적 로컬 서버: `python -m http.server 8000`.
 - `main` 브랜치에 커밋하면 GitHub Actions로 테스트 후 Pages에 배포됩니다.
 - 서버 저장, 온라인 순위 및 모바일 최적화는 없습니다.
+
+## v1.3.1 카메라 안정화
+
+마법진을 여닫거나 정답을 선택해 타게팅으로 바뀔 때 카메라를 옆으로 옮기지 않습니다. 카메라 중심은 모든 상태에서 플레이어를 기준으로 계산하고 시야/확대 비율은 고정합니다.

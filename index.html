@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>계산 마법사 — 프로토타입</title>
-<link rel="stylesheet" href="./src/styles.css?v=1.2.1">
+<link rel="stylesheet" href="./src/styles.css?v=1.3.1">
 </head><body><div id="wrap">
-<header><div><h1>계산 마법사</h1><small>수학으로 주문을 완성하는 2D 액션 RPG · v1.3</small></div><div class="stats"><span>기록 <b id="run-time">00:00.00</b></span><span>레벨 <b id="character-level">1</b></span><span>XP <b id="xp-label">0/24</b></span><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span></div></header>
+<header><div><h1>계산 마법사</h1><small>수학으로 주문을 완성하는 2D 액션 RPG · v1.3.1</small></div><div class="stats"><span>기록 <b id="run-time">00:00.00</b></span><span>레벨 <b id="character-level">1</b></span><span>XP <b id="xp-label">0/24</b></span><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span></div></header>
 <div id="xp-meter" aria-label="다음 레벨 진행도"><div id="xp-progress-fill"></div></div>
 <div id="stage"><canvas id="game" width="960" height="600" aria-label="계산 마법사 게임"></canvas><div id="toast" role="status">1 번개 · 2 힐 · WASD 이동</div><div id="slow"></div>
 <div id="upgrade-overlay" class="game-overlay" hidden>
@@ -43,4 +43,4 @@
 
 <p id="help"><span class="pc">WASD/방향키 이동 또는 마우스 클릭 이동 · </span>번개(1): 도함수 정답 선택 → 적 클릭 · 힐(2): 부정적분 정답 선택 → 회복. 몬스터를 처치해 XP를 얻고 레벨업하면 스킬 강화·기동력·생명력·집중·시간 왜곡 중 하나를 선택합니다. 내부 난이도는 시간과 처치에 따라 상승하며 마지막에 슬라임 군주가 등장합니다. 보스를 처치하면 클리어 기록이 확정됩니다. 적 수 제한은 없습니다. PC 전용. 문제를 푸는 중에도 WASD·마우스 클릭 이동이 가능합니다. 정답은 마법진 꼭짓점 클릭 또는 숫자 1~5로 선택합니다. 오답은 1.5초 이동 감속. 문제 풀이 중 세계 속도는 기본 100%이며 시간 왜곡 강화마다 15%씩 감소합니다(타게팅 중 100%). <span class="pc">테스트용 레벨 선택은 주소 뒤에 ?debug=1을 붙이면 표시됩니다.</span></p>
 </div>
-<script type="module" src="./src/game.js?v=1.2.1"></script></body></html>
+<script type="module" src="./src/game.js?v=1.3.1"></script></body></html>

@@ -10,6 +10,7 @@ import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from '
 import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { guardUpgradeButton } from './upgrade-input.js';
+import { centeredCamera } from './camera.js';
 
 (() => {
 'use strict';
@@ -44,9 +45,9 @@ const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 
 function cameraUpdate() {
-  // Reserve some view space for the ritual, but keep the character steerable.
-  camera.x = clamp(p.x-(mode==='question'?W*.42:W/2),0,WORLD_W-W);
-  camera.y = clamp(p.y-H/2,0,WORLD_H-H);
+  // Keep world framing fixed regardless of whether the ritual is visible.
+  const next=centeredCamera(p,{w:W,h:H},{w:WORLD_W,h:WORLD_H});
+  camera.x=next.x;camera.y=next.y;
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
