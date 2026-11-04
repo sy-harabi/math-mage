@@ -1,11 +1,11 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=bolt-203040-135';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.4.0';
 import { generateQuestion } from './problem-engine.js';
-import { resolveChainHits, healingGained } from './combat.js';
+import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.0';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=bolt-203040-135';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.4.0';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
 import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
@@ -13,6 +13,7 @@ import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
 import { pickEnemyAt } from './targeting.js';
+import { generateConceptSequence, answerConcept } from './concept-questions.js?v=1.4.0';
 
 (() => {
 'use strict';
@@ -25,7 +26,9 @@ const dom = {
   kills: document.getElementById('kills'), enemyCount: document.getElementById('enemies-count'),
   runTime: document.getElementById('run-time'), characterLevel: document.getElementById('character-level'),
   xpLabel: document.getElementById('xp-label'), xpFill: document.getElementById('xp-progress-fill'),
-  bolt: document.getElementById('bolt'), heal: document.getElementById('heal'),
+  bolt: document.getElementById('bolt'), heal: document.getElementById('heal'), fireball: document.getElementById('fireball'),
+  fireballFill: document.getElementById('fireball-fill'), fireballState: document.getElementById('fireball-state'),
+  mathTitle: document.getElementById('math-title'),
   boltFill: document.getElementById('bolt-fill'), healFill: document.getElementById('heal-fill'),
   boltState: document.getElementById('bolt-state'), healState: document.getElementById('heal-state'),
   cancel: document.getElementById('cancel'), restart: document.getElementById('restart'),
@@ -39,7 +42,7 @@ const dom = {
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
-let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig;
+let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, conceptSequence, fireballs, explosions;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
 let pointer = null;
@@ -64,16 +67,16 @@ function say(message, seconds=2.5) {
 }
 function newPlayer() {
   return {x:WORLD_W/2,y:WORLD_H/2,hp:100,maxHp:100,inv:0,failSlow:0,
-    cd:{bolt:0,heal:0}, levels:{bolt:1,heal:1}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
+    cd:{bolt:0,heal:0,fireball:0}, levels:{bolt:1,heal:1,fireball:1}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
 function reset() {
-  p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[];
+  p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; fireballs=[]; explosions=[]; conceptSequence=null;
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
   pointer=null;
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
   cameraUpdate(); startRun();
-  say('1 번개 · 2 힐 · 몬스터 처치로 XP 획득',3); updateUI();
+  say('1 번개 · 2 힐 · 3 파이어볼 · 몬스터 처치로 XP 획득',3); updateUI();
 }
 function startRun() {
   // Internal phases control enemy spawns, but are never displayed or paused.
@@ -114,33 +117,38 @@ function begin(which) {
   if(gameOver || mode!=='idle') return;
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
-  question=generateQuestion(activeCastConfig.problem);mode='question';
+  conceptSequence=which==='fireball'?generateConceptSequence(activeCastConfig.problem):null;
+  question=conceptSequence?conceptSequence.questions[0]:generateQuestion(activeCastConfig.problem);mode='question';
   displayMathQuestion();
-  say(which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2);
+  say(which==='fireball'?'빈칸을 완성하세요. 한 번 틀리면 주문 실패!':which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2);
 }
-function displayMathQuestion() {
-  dom.mathProblem.innerHTML=problemMathML(question,spell);
-  dom.mathHud.dataset.terms=String(question.data.inputTerms.length);
+function displayMathQuestion(keepChoices=false) {
+  const concept=spell==='fireball';
+  dom.mathTitle.textContent=concept?`파이어볼 · ${conceptSequence.index+1}/${conceptSequence.questions.length} · ${question.name}`:'주문 완성';
+  dom.mathProblem.innerHTML=concept?question.html:problemMathML(question,spell);
+  dom.mathHud.dataset.terms=concept?'concept':String(question.data.inputTerms.length);
   dom.mathHud.dataset.spell=spell;
-  dom.mathAnswers.replaceChildren();
-  question.data.choiceTermPolys.forEach((terms,index)=>{
-    const button=document.createElement('button');
-    button.type='button';button.className='math-choice';
-    button.setAttribute('aria-label',`${index+1}번: ${question.choices[index]}`);
-    const key=document.createElement('span');key.className='answer-key';key.textContent=String(index+1);
-    const formula=document.createElement('span');formula.className='answer-formula';
-    formula.innerHTML=polynomialMathML(terms,question.data.choiceHasConstant[index]);
-    button.append(key,formula);
-    button.addEventListener('click',()=>selectAnswer(index));
-    dom.mathAnswers.append(button);
-  });
+  if(!keepChoices){
+    dom.mathAnswers.replaceChildren();
+    question.choices.forEach((choice,index)=>{
+      const button=document.createElement('button');
+      button.type='button';button.className='math-choice';
+      button.setAttribute('aria-label',`${index+1}번: ${question.choices[index]}`);
+      const key=document.createElement('span');key.className='answer-key';key.textContent=String(index+1);
+      const formula=document.createElement('span');formula.className='answer-formula';
+      formula.innerHTML=concept?question.choiceHtml[index]:polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index]);
+      button.append(key,formula);
+      button.addEventListener('click',()=>selectAnswer(index));
+      dom.mathAnswers.append(button);
+    });
+  }
   dom.mathHud.hidden=false;
   updateRunePosition();
 }
 function endCast() {
   dom.mathHud.hidden=true;
   if(spell)p.cd[spell]=SPELLS[spell].cooldownSeconds*cooldownMultiplier(p);
-  mode='idle';spell=null;question=null;activeCastConfig=null;
+  mode='idle';spell=null;question=null;activeCastConfig=null;conceptSequence=null;
   checkMilestones();
 }
 function cancel() {if(mode!=='question'&&mode!=='target')return;say('마법 취소');endCast();}
@@ -150,6 +158,14 @@ function sparkle(x,y,color,count=16) {
 }
 function selectAnswer(index) {
   if(mode!=='question')return;
+  if(conceptSequence){
+    const result=answerConcept(conceptSequence,index);
+    if(result==='next'){
+      question=conceptSequence.questions[conceptSequence.index];
+      displayMathQuestion(true);return;
+    }
+    if(result==='inactive')return;
+  }
   dom.mathHud.hidden=true;
   if(index!==question.correct){
     sparkle(p.x,p.y,'#ff6988',12);p.failSlow=FAIL_SLOW_SECONDS;
@@ -158,7 +174,7 @@ function selectAnswer(index) {
   if(spell==='heal') {
     const gained=healingGained(p.hp,p.maxHp,activeCastConfig.power);
     p.hp+=gained;sparkle(p.x,p.y,'#80f3ab',24);say(`정답! HP +${gained}`);endCast();
-  } else {mode='target';say('정답! 번개를 맞힐 적을 클릭하세요.',3);}
+  } else {mode='target';say(spell==='fireball'?'주문 완성! 폭발시킬 위치를 클릭하세요.':'정답! 번개를 맞힐 적을 클릭하세요.',3);}
 }
 function killedEnemy(e) {
   if(!enemies.includes(e))return;
@@ -186,6 +202,27 @@ function castEnemy(primary) {
   say(`번개 ${hits.length}개체 타격 · ${defeated.length}마리 처치 · +${defeated.reduce((n,{enemy})=>n+enemy.xp,0)} XP`);
   endCast();
 }
+function castFireball(target) {
+  if(mode!=='target'||spell!=='fireball')return;
+  fireballs.push({x:p.x,y:p.y,target:{...target},radius:activeCastConfig.radius,power:activeCastConfig.power});
+  say('파이어볼 발사!');endCast();
+}
+function moveFireballs(wd) {
+  for(const ball of fireballs.slice()){
+    const d=distance(ball,ball.target),step=700*wd;
+    if(d>step){ball.x+=(ball.target.x-ball.x)/d*step;ball.y+=(ball.target.y-ball.y)/d*step;continue;}
+    fireballs=fireballs.filter(item=>item!==ball);
+    const hits=resolveAreaHits(ball.target,enemies,ball.radius,ball.power);
+    for(const {enemy,damage} of hits)enemy.hp=Math.max(0,enemy.hp-damage);
+    explosions.push({...ball.target,r:ball.radius,ttl:.4});
+    sparkle(ball.target.x,ball.target.y,'#ff9e46',28);
+    const defeated=hits.filter(({enemy})=>enemy.hp<=0);
+    defeated.filter(({enemy})=>enemy.type!=='boss').forEach(({enemy})=>killedEnemy(enemy));
+    defeated.filter(({enemy})=>enemy.type==='boss').forEach(({enemy})=>killedEnemy(enemy));
+    if(mode==='victory')return;
+    say(`파이어볼 ${hits.length}개체 타격 · ${defeated.length}마리 처치`);
+  }
+}
 function openUpgrade() {
   currentChoices=selectUpgradeChoices(p);
   if(!currentChoices.length){progression.pendingUpgrades=0;return;}
@@ -196,7 +233,7 @@ function openUpgrade() {
     const btn=document.createElement('button');btn.type='button';btn.className='upgrade-option';
     const strong=document.createElement('strong');strong.textContent=option.title;
     const small=document.createElement('small');
-    const next=option.id==='bolt'?` → Lv${p.levels.bolt+1}`:option.id==='heal'?` → Lv${p.levels.heal+1}`:'';
+    const next=['bolt','heal','fireball'].includes(option.id)?` → Lv${p.levels[option.id]+1}`:'';
     small.textContent=option.description+next;
     btn.append(strong,small);
     guardUpgradeButton(btn,()=>selectUpgrade(option.id));
@@ -332,9 +369,12 @@ function tick(dt) {
   const wd=dt*worldTimeMultiplier(mode,p);
   p.inv=Math.max(0,p.inv-wd);
   p.failSlow=Math.max(0,p.failSlow-dt);
-  for(const key of ['bolt','heal'])p.cd[key]=Math.max(0,p.cd[key]-dt);
+  for(const key of ['bolt','heal','fireball'])p.cd[key]=Math.max(0,p.cd[key]-dt);
   moveHero(wd);cameraUpdate();
-  moveEnemies(wd);moveLasers(wd);
+  moveEnemies(wd);moveLasers(wd);moveFireballs(wd);
+  if(mode==='victory')return;
+  for(const explosion of explosions)explosion.ttl-=wd;
+  explosions=explosions.filter(item=>item.ttl>0);
   if(gameOver)return;
   addStageTime(stage,wd);
   updateHiddenPhase();
@@ -362,6 +402,7 @@ C.addEventListener('pointerdown',ev=>{
   pointer=t;
   if(mode==='target'){
     const wp=worldPoint(t);
+    if(spell==='fireball'){castFireball(wp);return;}
     const hit=pickEnemyAt(wp,enemies);
     if(hit)castEnemy(hit);else touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:wp;
     return;
@@ -376,24 +417,24 @@ window.addEventListener('keydown',ev=>{
   keys.add(key);if(MOVE_KEYS.has(key))touchTarget=null;
   if(ev.repeat)return;
   if(mode==='question'&&/^[1-5]$/.test(key)){selectAnswer(Number(key)-1);return;}
-  if(key==='1')begin('bolt');if(key==='2')begin('heal');
+  if(key==='1')begin('bolt');if(key==='2')begin('heal');if(key==='3')begin('fireball');
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
 window.addEventListener('blur',()=>{keys.clear();pointer=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.victoryRestart.addEventListener('click',reset);
-for(const name of ['bolt','heal','cancel','restart']){
-  dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel,restart:reset})[name]());
+for(const name of ['bolt','heal','fireball','cancel','restart']){
+  dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),fireball:()=>begin('fireball'),cancel,restart:reset})[name]());
 }
 // Debug selectors do not appear in normal gameplay; all upgrades normally require XP.
 if(DEBUG){
   document.querySelectorAll('.debug-level-picker').forEach(el=>el.hidden=false);
-  for(const which of ['bolt','heal']){
+  for(const which of ['bolt','heal','fireball']){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){
       button.addEventListener('click',()=>{
         p.levels[which]=Number(button.dataset[which+'Level']);
-        say(`테스트: ${which==='bolt'?'번개':'힐'} Lv${p.levels[which]}`,2);updateUI();
+        say(`테스트: ${SPELLS[which].name} Lv${p.levels[which]}`,2);updateUI();
       });
     }
   }
@@ -453,7 +494,7 @@ function drawEnemy(e,selected=false){
   }
 }
 function draw(){
-  const selected=mode==='target'&&!gameOver&&pointer?pickEnemyAt(worldPoint(pointer),enemies):null;
+  const selected=mode==='target'&&spell==='bolt'&&!gameOver&&pointer?pickEnemyAt(worldPoint(pointer),enemies):null;
   C.style.cursor=mode==='target'&&!gameOver?(selected?'pointer':'crosshair'):'';
   ctx.clearRect(0,0,W,H);ctx.fillStyle='#13243b';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='#1e3652';ctx.lineWidth=1;
@@ -462,6 +503,18 @@ function draw(){
   ctx.save();ctx.translate(-camera.x,-camera.y);
   if(touchTarget)circle(touchTarget.x,touchTarget.y,9,null,'#729cbd',1);
   enemies.forEach(e=>drawEnemy(e,e===selected));
+  if(mode==='target'&&spell==='fireball'&&pointer){
+    const target=worldPoint(pointer);
+    circle(target.x,target.y,activeCastConfig.radius,'#ff8d342c','#ffb666',2);
+    circle(target.x,target.y,3,'#ffe4b1');
+  }
+  for(const ball of fireballs){
+    circle(ball.x,ball.y,10,'#ff773d','#ffdda0',3);
+  }
+  for(const blast of explosions){
+    ctx.save();ctx.globalAlpha=blast.ttl/.4;
+    circle(blast.x,blast.y,blast.r,'#ff8d3480','#ffe1a0',3);ctx.restore();
+  }
   for(const laser of lasers){
     ctx.save();ctx.strokeStyle='#fb65ce';ctx.shadowColor='#ff96e4';ctx.shadowBlur=22;
     ctx.lineWidth=laser.width;ctx.globalAlpha=.72;
@@ -496,7 +549,7 @@ function draw(){
   if(p.failSlow>0){label(`이동 감속 ${p.failSlow.toFixed(1)}초`,W/2,60,16,'#f5a2b9');}
   if(mode==='target'){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
-    label('번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
+    label(spell==='fireball'?'파이어볼 대기 중 — 폭발시킬 위치를 클릭하세요':'번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
     if(selected)circle(selected.x-camera.x,selected.y-camera.y,selected.r+8,null,'#ffe388',3);
   }
   if(gameOver){
@@ -518,7 +571,7 @@ function updateUI(){
   const showWarp=mode==='question'&&qSpeed<1;
   dom.slow.style.display=showWarp?'block':'none';
   dom.slow.textContent=showWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
-  for(const k of ['bolt','heal']){
+  for(const k of ['bolt','heal','fireball']){
     const ready=p.cd[k]<=0,cdTotal=SPELLS[k].cooldownSeconds*cooldownMultiplier(p);
     const fill=100*clamp(1-p.cd[k]/cdTotal,0,1);
     dom[k].disabled=gameOver||mode!=='idle'||!ready;
@@ -528,9 +581,9 @@ function updateUI(){
   }
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
   dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
-    mode==='question'?'마법진: 정답 선택':mode==='target'?'적을 클릭해 발사':gameOver?'게임 오버':
-    `번개 Lv${p.levels.bolt} / 힐 Lv${p.levels.heal}`;
-  if(DEBUG){for(const which of ['bolt','heal']){
+    mode==='question'?'마법진: 정답 선택':mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
+    `번개 Lv${p.levels.bolt} / 힐 Lv${p.levels.heal} / 파이어볼 Lv${p.levels.fireball}`;
+  if(DEBUG){for(const which of ['bolt','heal','fireball']){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){
       const chosen=p.levels[which]===Number(button.dataset[which+'Level']);
       button.classList.toggle('selected',chosen);button.setAttribute('aria-pressed',String(chosen));

@@ -119,3 +119,32 @@
 
 /* Three-term formulas have a little more horizontal room in their nodes. */
 .math-cast-hud[data-terms="3"] .math-choice{width:220px}
+
+/* Concept rituals retain the same pentagram and five stationary answer nodes. */
+#buttons .fireball-skill.ready:not(:disabled){border-color:#ff9a62;background:#49372f}
+.fireball-skill .cooldown-fill{background:#ff9954}
+.skill-button.fireball-skill.ready .skill-state{color:#ffc18e}
+.math-cast-hud[data-spell="fireball"] .rune-pentagon{stroke:#ffa86f;filter:drop-shadow(0 0 5px #ff7e4899)}
+.math-cast-hud[data-spell="fireball"] .rune-star{stroke:#ffad8190}
+.math-cast-hud[data-spell="fireball"] .rune-inner{stroke:#ffc18eaa;fill:#1e1726e0}
+.math-cast-hud[data-spell="fireball"] .math-choice{border-color:#ffb282;background:#53352ee8}
+.math-cast-hud[data-spell="fireball"] .math-choice:hover{background:#855039;border-color:#ffe1b7}
+.math-cast-hud[data-spell="fireball"] .rune-core{width:290px;gap:5px}
+.math-cast-hud[data-spell="fireball"] .math-hud-title{max-width:265px;font-size:11px;letter-spacing:0;color:#ffd2ae}
+.math-cast-hud[data-spell="fireball"] .math-problem{display:block;font-size:14px;line-height:1.7}
+.concept-line{min-height:24px}
+.concept-assumption{font-size:12px;line-height:1.2;color:#d1bba8}
+.concept-assumption math{font-size:13px}
+.concept-line math{display:inline-block;vertical-align:middle;font-size:16px;max-width:100%}
+.concept-blank{display:inline-block;min-width:32px;padding:0 5px;border:1px solid #ffc68a;border-radius:5px;background:#a354303b;color:#ffe2a8;font-weight:800}
+.concept-fraction{display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;line-height:1.45;margin:3px 4px;text-align:center}
+.concept-fraction>span:first-child{border-bottom:1px solid #e8d9cc;padding:0 4px 2px}
+.concept-fraction>span:last-child{padding:2px 4px 0}
+.concept-limit{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin-right:4px;line-height:1.2;font-family:serif;font-size:19px}
+.concept-limit small{font-size:12px;white-space:nowrap;color:inherit}
+.math-cast-hud[data-spell="fireball"] .answer-formula{font-size:15px}
+.math-cast-hud[data-spell="fireball"] .answer-formula math{font-size:16px}
+#fireball-level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
+#fireball-level-picker strong{font-size:13px;color:#ffc99d;margin-right:4px}
+#fireball-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#80604e;background:#35271f}
+#fireball-level-picker button.selected{background:#71452c;border-color:#ffc18e}

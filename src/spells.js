@@ -29,6 +29,16 @@ export const SPELLS = Object.freeze({
       3: { power: 80, problem: { termCount: 3 } },
     },
   },
+  fireball: {
+    name: '파이어볼', cooldownSeconds: 4, power: 10,
+    // One basic slime's diameter (42 world pixels) as the explosion radius.
+    radius: 42,
+    problem: { kind: 'concept', questionCount: 1, answerCount: 5 },
+    levels: {
+      2: { power: 30, problem: { questionCount: 2 } },
+      3: { power: 70, problem: { questionCount: 3 } },
+    },
+  },
 });
 
 /** Resolves just the requested spell level; does not mutate the shared config. */

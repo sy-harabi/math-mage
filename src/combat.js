@@ -33,3 +33,13 @@ export function healingGained(current, maximum, power) {
   }
   return Math.max(0, Math.min(maximum - current, power));
 }
+
+/** A circle clips enemy hitboxes, including the edge, and hits each living enemy once. */
+export function resolveAreaHits(center, enemies, radius, damage) {
+  if(![center?.x,center?.y,radius,damage].every(Number.isFinite)||radius<=0||damage<=0) {
+    throw new Error('범위 공격 설정이 올바르지 않습니다.');
+  }
+  return [...new Set(enemies)].filter(enemy=>enemy.hp>0 &&
+    Math.hypot(enemy.x-center.x,enemy.y-center.y)<=radius+(enemy.r??0))
+    .map(enemy=>({enemy,damage}));
+}
