@@ -1,4 +1,4 @@
-:root{color-scheme:dark;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e7eefb;min-height:100dvh;display:flex;align-items:center;justify-content:center}#wrap{width:min(100%,1050px);padding:12px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}h1{font-size:19px;margin:0}small{color:#abbdd7}.stats{display:flex;gap:13px;flex-wrap:wrap;font-size:13px}.meter{display:inline-block;width:95px;height:10px;background:#293449;border-radius:9px;vertical-align:middle;overflow:hidden}.meter b{display:block;height:100%;transition:width .1s}.hp{background:#59d69c}.mp{background:#6ba8ff}#stage{position:relative;border:1px solid #34445c;border-radius:12px;overflow:hidden;background:#142033;touch-action:none}canvas{display:block;width:100%;aspect-ratio:16/10;cursor:crosshair;touch-action:none}#toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:90%;text-align:center;pointer-events:none;background:#061324cf;padding:7px 12px;border-radius:30px;font-size:13px;white-space:normal}#slow{position:absolute;right:12px;top:12px;font-size:12px;background:#273e70e8;border:1px solid #779eea;padding:5px 9px;border-radius:20px;display:none}#buttons{display:flex;gap:9px;margin:10px 0;align-items:stretch;flex-wrap:wrap}button{border:1px solid #576d95;border-radius:10px;background:#243653;color:white;cursor:pointer;padding:10px 14px;font-size:14px;font-weight:700;min-height:43px}button:disabled{cursor:not-allowed;opacity:.4}button:hover:not(:disabled){background:#35527e}button.active{outline:2px solid #78b7ff}#status{flex:1;color:#d3e2fa;font-size:13px;align-self:center}#help{font-size:12px;line-height:1.7;color:#9eb0c9;margin:5px 1px}#touchpad{display:none;user-select:none;touch-action:none;gap:5px;justify-content:center;align-items:center}#touchpad button{min-width:46px;padding:8px}#touchpad .sp{visibility:hidden}@media(pointer:coarse){#touchpad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,45px)}#help .pc{display:none}}@media(max-width:640px){#wrap{padding:5px}canvas{aspect-ratio:1/1.15}header{padding:3px}h1{font-size:16px}.stats{gap:7px;font-size:12px}.meter{width:65px}#buttons{gap:5px}button{font-size:12px;padding:8px 10px}#toast{font-size:11px}}
+:root{color-scheme:dark;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}*{box-sizing:border-box}body{margin:0;background:#0b1220;color:#e7eefb;min-height:100dvh;display:flex;align-items:center;justify-content:center}#wrap{width:min(100%,1050px);padding:12px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}h1{font-size:19px;margin:0}small{color:#abbdd7}.stats{display:flex;gap:13px;flex-wrap:wrap;font-size:13px}.meter{display:inline-block;width:95px;height:10px;background:#293449;border-radius:9px;vertical-align:middle;overflow:hidden}.meter b{display:block;height:100%;transition:width .1s}.hp{background:#59d69c}.mp{background:#6ba8ff}#stage{position:relative;border:1px solid #34445c;border-radius:12px;overflow:hidden;background:#142033;touch-action:none}canvas{display:block;width:100%;aspect-ratio:16/10;cursor:crosshair;touch-action:none}#toast{position:absolute;top:12px;left:50%;transform:translateX(-50%);max-width:90%;text-align:center;pointer-events:none;background:#061324cf;padding:7px 12px;border-radius:30px;font-size:13px;white-space:normal}#slow{position:absolute;right:12px;top:12px;font-size:12px;background:#273e70e8;border:1px solid #779eea;padding:5px 9px;border-radius:20px;display:none}#buttons{display:flex;gap:9px;margin:10px 0;align-items:stretch;flex-wrap:wrap}button{border:1px solid #576d95;border-radius:10px;background:#243653;color:white;cursor:pointer;padding:10px 14px;font-size:14px;font-weight:700;min-height:43px}button:disabled{cursor:not-allowed;opacity:.4}button:hover:not(:disabled){background:#35527e}button.active{outline:2px solid #78b7ff}#status{flex:1;color:#d3e2fa;font-size:13px;align-self:center}#help{font-size:12px;line-height:1.7;color:#9eb0c9;margin:5px 1px}
 
 /* v0.3: cooldown bars fill toward availability. */
 #buttons .skill-button{min-width:165px;display:flex;flex-direction:column;align-items:stretch;gap:7px;text-align:left;padding:9px 12px;background:#233750}
@@ -12,21 +12,21 @@
 .cooldown-track{display:block;width:100%;height:8px;background:#0d1829;border-radius:8px;overflow:hidden;border:1px solid #35485f}
 .cooldown-fill{display:block;width:100%;height:100%;border-radius:8px;background:#f1c759;transition:width .075s linear}
 .heal-skill .cooldown-fill{background:#67d69c}
-@media(max-width:640px){#buttons .skill-button{min-width:130px;flex:1;gap:5px;padding:8px}.skill-state{font-size:10px}}
+
 
 /* v0.8: persistent, explicit test level selector. */
 #level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
 #level-picker strong{font-size:13px;color:#c8defa;margin-right:4px}
 #level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
 #level-picker button.selected{background:#456687;border-color:#f1cd76;box-shadow:inset 0 0 0 1px #f1cd76;color:white}
-@media(max-width:640px){#level-picker strong{width:100%}#level-picker button{flex:1;padding:7px 5px;font-size:11px}}
+
 
 /* v0.9: both skills have independent, persistent level-preview selectors. */
 #heal-level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
 #heal-level-picker strong{font-size:13px;color:#c8defa;margin-right:4px}
 #heal-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
 #heal-level-picker button.selected{background:#315c51;border-color:#71e2a1;box-shadow:inset 0 0 0 1px #71e2a1;color:white}
-@media(max-width:640px){#heal-level-picker strong{width:100%}#heal-level-picker button{flex:1;padding:7px 5px;font-size:11px}}
+
 
 /* v1.0 progression HUD and modal upgrades. */
 #stage-meter,#xp-meter{position:relative;background:#172a41;border:1px solid #435877;border-radius:6px;overflow:hidden}
@@ -45,44 +45,74 @@
 .upgrade-option strong{font-size:14px}
 .upgrade-option small{font-size:12px;line-height:1.35}
 .upgrade-option:hover{background:#345b80}
-@media(max-width:600px){.overlay-panel{padding:16px 9px}.upgrade-options{gap:5px}.upgrade-option{min-height:105px;padding:7px 4px}.upgrade-option strong{font-size:12px}.upgrade-option small{font-size:10px}.stats{gap:8px}}
 
-/* v1.2 non-modal, readable math casting HUD. The arena stays interactive. */
+
+
+/* v1.3: PC-only translucent ritual. Only the five answer sigils intercept clicks. */
+#wrap{min-width:920px}
+#stage{isolation:isolate}
 .math-cast-hud[hidden]{display:none!important}
 .math-cast-hud{
-  position:absolute;z-index:4;right:10px;top:50px;bottom:10px;
-  width:min(31%,300px);display:flex;flex-direction:column;gap:8px;
-  padding:12px;border-radius:13px;border:1px solid #6687b2;
-  background:#0b1a2bef;box-shadow:0 5px 22px #0007;
-  overflow:hidden;pointer-events:auto;
+  position:absolute;z-index:4;inset:0;
+  pointer-events:none;overflow:hidden;
 }
-.math-hud-title{font-size:13px;font-weight:800;display:flex;justify-content:space-between;gap:5px;color:#d9eaff}
-.math-hud-title span{font-size:10px;font-weight:600;color:#98bedf}
-.math-problem{min-height:79px;display:flex;flex-direction:column;justify-content:center;gap:6px;align-items:center;
-  border-bottom:1px solid #425875;padding-bottom:8px;color:white}
-.math-problem math{font-size:19px;max-width:100%;overflow:hidden}
-.math-problem math:first-child{font-size:19px}
-.math-answers{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(5,minmax(0,1fr));gap:6px;min-height:0;flex:1}
-.math-choice{min-height:0;display:flex;align-items:center;justify-content:flex-start;gap:7px;padding:5px 9px;
-  background:#243f61;border:1px solid #708fb7;border-radius:10px;color:#eef7ff;line-height:1}
-.math-choice:hover,.math-choice:focus-visible{background:#315d83;border-color:#d9e6ff}
-.answer-key{flex:0 0 22px;display:grid;place-items:center;font-size:13px;font-weight:800;
-  width:22px;height:22px;border-radius:6px;background:#10223c;color:#e3bd66}
-.answer-formula{flex:1;display:flex;justify-content:flex-start;align-items:center;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;touch-action:pan-x}
-.answer-formula math{font-size:17px;min-width:max-content;white-space:nowrap;color:#fff;margin:auto}
-.math-hint{text-align:center;color:#afc7df;font-size:10px;line-height:1.3}
+.rune-frame{
+  --rune-scale:1;
+  position:absolute;left:42%;top:50%;width:600px;height:520px;
+  transform:translate(-50%,-50%) scale(var(--rune-scale));
+  transform-origin:center;
+  pointer-events:none;
+}
+.rune-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.rune-outer{fill:rgba(9,26,43,.075);stroke:rgba(112,205,247,.36);stroke-width:2}
+.rune-pentagon{fill:rgba(10,27,47,.16);stroke:#7ccaff;stroke-width:2.5;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(102,194,255,.7))}
+.rune-star{fill:none;stroke:rgba(116,211,255,.56);stroke-width:2.5;stroke-linecap:round}
+.rune-inner{fill:rgba(6,17,36,.73);stroke:rgba(150,219,255,.64);stroke-width:1.5}
+.math-cast-hud[data-spell="heal"] .rune-outer{stroke:rgba(114,238,182,.50)}
+.math-cast-hud[data-spell="heal"] .rune-pentagon{stroke:#80eeb8;filter:drop-shadow(0 0 5px rgba(110,240,163,.65))}
+.math-cast-hud[data-spell="heal"] .rune-star{stroke:rgba(125,239,171,.62)}
+.math-cast-hud[data-spell="heal"] .rune-inner{stroke:rgba(146,241,188,.65)}
+.rune-core{
+  position:absolute;left:50%;top:50%;width:270px;min-height:132px;
+  transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;
+  gap:5px;color:#f0f8ff;text-align:center;pointer-events:none;
+  text-shadow:0 1px 4px rgba(4,11,24,.95);
+}
+.math-hud-title{font-size:12px;font-weight:800;letter-spacing:.11em;color:#c6eaff}
+.math-problem{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;width:100%;min-height:62px}
+.math-problem math{font-size:18px;max-width:270px;white-space:nowrap}
+.math-cast-hud[data-terms="2"] .math-problem math{font-size:16px}
+.math-cast-hud[data-terms="3"] .math-problem math{font-size:14px}
+.math-hint{font-size:10px;color:#bcd7f2}
+.math-answers{position:absolute;inset:0;pointer-events:none}
+.math-choice{
+  position:absolute;width:204px;height:66px;min-height:0;
+  transform:translate(-50%,-50%);padding:4px 6px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  color:#eef8ff;background:rgba(23,57,93,.87);
+  border:1.5px solid #7dc5ff;border-radius:37px;
+  box-shadow:0 0 0 3px rgba(91,160,216,.13),inset 0 0 17px rgba(70,154,233,.23);
+  cursor:pointer;pointer-events:auto;
+  user-select:none;
+}
+.math-choice:nth-child(1){left:50%;top:12%}
+.math-choice:nth-child(2){left:81.3%;top:38%}
+.math-choice:nth-child(3){left:69.3%;top:80.7%}
+.math-choice:nth-child(4){left:30.7%;top:80.7%}
+.math-choice:nth-child(5){left:18.7%;top:38%}
+.math-choice:hover,.math-choice:focus-visible{
+  background:rgba(37,102,148,.98);border-color:#f6e8a0;
+  box-shadow:0 0 15px rgba(158,232,255,.60);
+  outline:none;
+}
+.math-cast-hud[data-spell="heal"] .math-choice{border-color:#82e1ba;background:rgba(22,72,64,.88)}
+.math-cast-hud[data-spell="heal"] .math-choice:hover{border-color:#fff3bd;background:rgba(39,105,81,.98)}
+.answer-key{flex:0 0 17px;width:17px;height:20px;display:grid;place-items:center;
+  font-size:11px;color:#ffe39a;font-weight:800}
+.answer-formula{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;pointer-events:none}
+.answer-formula math{display:inline-block;max-width:100%;font-size:14px;white-space:nowrap;color:#fff}
+.math-cast-hud[data-terms="2"] .answer-formula math{font-size:13px}
+.math-cast-hud[data-terms="3"] .answer-formula math{font-size:11px}
 .victory-panel #victory-time{display:block;font-size:clamp(38px,7vw,58px);font-variant-numeric:tabular-nums;color:#f5df97;margin:15px 0}
 .victory-panel button{margin-top:10px;background:#365f8c}
-@media(max-width:740px){
- .math-cast-hud{left:6px;right:6px;top:auto;bottom:6px;width:auto;max-height:43%;min-height:152px;
-   padding:6px;gap:4px;border-radius:9px;background:#0b1a2cf4}
- .math-hud-title{font-size:11px}
- .math-hud-title span{font-size:9px}
- .math-problem{min-height:34px;padding-bottom:3px;gap:1px;flex:0 0 auto}
- .math-problem math,.math-problem math:first-child{font-size:15px}
- .math-answers{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(3,minmax(31px,1fr));gap:3px}
- .math-choice{padding:3px 3px;gap:3px;border-radius:6px;min-height:31px}
- .answer-key{flex:0 0 16px;width:16px;height:16px;font-size:10px}
- .answer-formula math{font-size:13px}
- .math-hint{font-size:9px}
-}

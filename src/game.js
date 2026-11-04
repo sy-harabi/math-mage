@@ -44,9 +44,9 @@ const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 
 function cameraUpdate() {
-  const narrow=window.matchMedia('(max-width: 740px)').matches;
-  camera.x = clamp(p.x-(mode==='question'&&!narrow?W*.42:W/2),0,WORLD_W-W);
-  camera.y = clamp(p.y-(mode==='question'&&narrow?H*.36:H/2),0,WORLD_H-H);
+  // Reserve some view space for the ritual, but keep the character steerable.
+  camera.x = clamp(p.x-(mode==='question'?W*.42:W/2),0,WORLD_W-W);
+  camera.y = clamp(p.y-H/2,0,WORLD_H-H);
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
@@ -109,6 +109,8 @@ function begin(which) {
 }
 function displayMathQuestion() {
   dom.mathProblem.innerHTML=problemMathML(question,spell);
+  dom.mathHud.dataset.terms=String(question.data.inputTerms.length);
+  dom.mathHud.dataset.spell=spell;
   dom.mathAnswers.replaceChildren();
   question.data.choiceTermPolys.forEach((terms,index)=>{
     const button=document.createElement('button');
@@ -367,15 +369,6 @@ document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.victoryRestart.addEventListener('click',reset);
 for(const name of ['bolt','heal','cancel','restart']){
   dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel,restart:reset})[name]());
-}
-const directions={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright'};
-for(const b of document.querySelectorAll('[data-dir]')){
-  const key=directions[b.dataset.dir];
-  b.addEventListener('pointerdown',e=>{
-    e.preventDefault();if(mode==='upgrade'||mode==='victory')return;
-    b.setPointerCapture(e.pointerId);keys.add(key);touchTarget=null;
-  });
-  for(const name of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(name,()=>keys.delete(key));
 }
 // Debug selectors do not appear in normal gameplay; all upgrades normally require XP.
 if(DEBUG){

@@ -11,11 +11,10 @@ test('every element referenced by the game code exists in real HTML',()=>{
   for(const id of referenced) assert.ok(ids.has(id), `Missing index.html element: #${id}`);
 });
 
-
 function makeElement(id) {
   const listeners=new Map();
   return {
-    id,hidden:false,style:{},children:[],textContent:'',innerHTML:'',disabled:false,
+    id,hidden:false,style:{},dataset:{},children:[],textContent:'',innerHTML:'',disabled:false,
     classList:{add(){},remove(){},toggle(){}},
     setAttribute(){},
     setPointerCapture(){},
@@ -54,28 +53,44 @@ test('game boots with native MathML choices and WASD active during question', as
   assert.equal(get('math-cast-hud').hidden,true);
 });
 
-test('mobile touch controls can open question, move and select an answer',async()=>{
+
+test('PC rune ritual keeps five clickable MathML options, movement and cancellation',async()=>{
   const elements=new Map();
   const get=id=>{
-    if(!ids.has(id)) return null;
+    if(!ids.has(id))return null;
     if(!elements.has(id))elements.set(id,makeElement(id));
     return elements.get(id);
   };
   const canvas=get('game');canvas.width=960;canvas.height=600;
   canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
-  const pads=['up','down','left','right'].map(dir=>{
-    const el=makeElement(`pad-${dir}`);el.dataset={dir};return el;
-  });
-  globalThis.window={location:{search:''},matchMedia:()=>({matches:true}),addEventListener:()=>{}};
+  const listeners=new Map();
+  globalThis.window={location:{search:''},addEventListener:(k,f)=>listeners.set(k,f)};
   globalThis.document={getElementById:get,createElement:makeElement,
-    querySelectorAll:query=>query==='[data-dir]'?pads:[],addEventListener:()=>{},hidden:false};
+    querySelectorAll:()=>[],addEventListener:()=>{},hidden:false};
   globalThis.requestAnimationFrame=()=>{};
-  await import('../src/game.js?mobile-test');
+  await import('../src/game.js?pc-rune-test');
+  assert.equal(get('math-cast-hud').hidden,true);
   get('bolt').click();
   assert.equal(get('math-cast-hud').hidden,false);
+  assert.equal(get('math-cast-hud').dataset.terms,'1');
   assert.equal(get('math-answers').children.length,5);
-  pads[0]._listeners.get('pointerdown')({preventDefault(){},pointerId:1});
-  get('math-answers').children[0].click();
+  for(const option of get('math-answers').children){
+    assert.equal(option.className,'math-choice');
+    assert.match(option.children[1].innerHTML,/<math/);
+  }
+  listeners.get('keydown')({key:'w',repeat:false,preventDefault(){}});
+  assert.equal(get('math-cast-hud').hidden,false);
+  listeners.get('keydown')({key:'escape',repeat:false,preventDefault(){}});
   assert.equal(get('math-cast-hud').hidden,true);
-  assert.ok(get('victory-restart')._listeners.has('click'),'Victory restart is wired');
+  assert.equal(ids.has('touchpad'),false);
+});
+
+test('PC ritual is a transparent five-point pentagram, not an exercise-card list',()=>{
+  assert.match(html,/<svg class="rune-lines"/);
+  assert.match(html,/<polygon class="rune-pentagon"/);
+  assert.match(html,/<path class="rune-star"/);
+  const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
+  assert.match(css,/\.math-cast-hud\{[^}]*pointer-events:none/s);
+  assert.match(css,/\.math-choice\{[^}]*pointer-events:auto/s);
+  assert.match(css,/\.math-choice:nth-child\(5\)/);
 });
