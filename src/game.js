@@ -371,7 +371,9 @@ function tick(dt) {
   p.failSlow=Math.max(0,p.failSlow-dt);
   for(const key of ['bolt','heal','fireball'])p.cd[key]=Math.max(0,p.cd[key]-dt);
   moveHero(wd);cameraUpdate();
-  moveEnemies(wd);moveLasers(wd);moveFireballs(wd);
+  moveEnemies(wd);moveLasers(wd);
+  if(gameOver)return;
+  moveFireballs(wd);
   if(mode==='victory')return;
   for(const explosion of explosions)explosion.ttl-=wd;
   explosions=explosions.filter(item=>item.ttl>0);
