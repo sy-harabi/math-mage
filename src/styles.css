@@ -27,3 +27,22 @@
 #heal-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
 #heal-level-picker button.selected{background:#315c51;border-color:#71e2a1;box-shadow:inset 0 0 0 1px #71e2a1;color:white}
 @media(max-width:640px){#heal-level-picker strong{width:100%}#heal-level-picker button{flex:1;padding:7px 5px;font-size:11px}}
+
+/* v1.0 progression HUD and modal upgrades. */
+#stage-meter,#xp-meter{position:relative;background:#172a41;border:1px solid #435877;border-radius:6px;overflow:hidden}
+#stage-meter{height:22px;margin:3px 0 4px}
+#stage-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#587fc0,#8daaf0);transition:width .14s linear}
+#stage-progress-text{position:absolute;inset:0;text-align:center;line-height:20px;font-weight:700;font-size:12px;text-shadow:0 1px 2px #091122}
+#xp-meter{height:6px;margin:0 0 9px}
+#xp-progress-fill{height:100%;width:0%;background:#8cdfad;transition:width .14s linear}
+.game-overlay[hidden],.debug-level-picker[hidden]{display:none!important}
+.game-overlay{position:absolute;inset:0;z-index:6;background:#051226d9;display:flex;justify-content:center;align-items:center;padding:22px}
+.overlay-panel{width:min(100%,620px);border:1px solid #91b4e1;border-radius:15px;background:#14243bf2;padding:22px 18px;text-align:center;box-shadow:0 12px 44px #0009}
+.overlay-panel h2{font-size:24px;margin:0 0 6px}
+.overlay-panel p{color:#b9cbe2;margin:5px 0 16px;font-size:13px}
+.upgrade-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.upgrade-option{min-height:112px;display:flex;flex-direction:column;gap:9px;align-items:center;justify-content:center;text-align:center;padding:10px 7px;background:#253f5e;border-color:#688db7;white-space:normal}
+.upgrade-option strong{font-size:14px}
+.upgrade-option small{font-size:12px;line-height:1.35}
+.upgrade-option:hover{background:#345b80}
+@media(max-width:600px){.overlay-panel{padding:16px 9px}.upgrade-options{gap:5px}.upgrade-option{min-height:105px;padding:7px 4px}.upgrade-option strong{font-size:12px}.upgrade-option small{font-size:10px}.stats{gap:8px}}
