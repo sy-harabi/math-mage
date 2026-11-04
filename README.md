@@ -1,4 +1,6 @@
-# 계산 마법사 (Math Mage) — v1.7.0 (PC 전용)
+# 아브라칼큘러스! — v1.7.0 (PC 전용)
+
+미분하고, 적분하고, 살아남아라.
 
 [게임 플레이](https://sy-harabi.github.io/math-mage/) · [소스코드](https://github.com/sy-harabi/math-mage)
 
