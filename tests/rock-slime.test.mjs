@@ -39,8 +39,9 @@ test('landing is randomized around the current player, never predicted, and resp
   assert.deepEqual(chooseRockLanding(e,p,world,rolls(.9,1,0)),{x:890,y:500});
   const far=chooseRockLanding(e,{x:1000,y:500},world,rolls(0,0,0));
   assert.deepEqual(far,{x:920,y:500});
-  const edge=chooseRockLanding(e,{x:0,y:300},world,rolls(0,0,0));
-  assert.equal(edge.x,e.r);
+  const boundaryRock=createEnemy('rock',100,100,()=>.5,5);
+  const edge=chooseRockLanding(boundaryRock,{x:0,y:300},world,rolls(0,0,0));
+  assert.equal(edge.x,boundaryRock.r);
   prepare(e,p);
   assert.ok(Math.abs(e.aim.x-(800-Math.sqrt(.5)*40))<1e-9);
   const aim={...e.aim};p.x=1300;p.y=900;
