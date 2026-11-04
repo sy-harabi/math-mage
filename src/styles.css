@@ -163,3 +163,30 @@
 #fireball-level-picker strong{font-size:13px;color:#ffc99d;margin-right:4px}
 #fireball-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#80604e;background:#35271f}
 #fireball-level-picker button.selected{background:#71452c;border-color:#ffc18e}
+
+/* Healing and shielding use the same concise term rituals as their attack counterparts. */
+.math-cast-hud[data-spell="heal"] .math-hud-title,
+.math-cast-hud[data-spell="heal"] .math-hint,
+.math-cast-hud[data-spell="shield"] .math-hud-title,
+.math-cast-hud[data-spell="shield"] .math-hint{display:none}
+.math-cast-hud[data-spell="heal"] .math-problem,
+.math-cast-hud[data-spell="shield"] .math-problem{gap:12px}
+.math-cast-hud[data-spell="heal"] .math-choice .answer-formula math,
+.math-cast-hud[data-spell="shield"] .math-choice .answer-formula math{font-size:21px}
+.math-cast-hud[data-spell="heal"] .bolt-answer math{font-size:21px;color:#b3f5ce}
+.math-cast-hud[data-spell="heal"] .bolt-step.is-current{background:#bbf9d5;border-color:#dbffe9;box-shadow:0 0 12px #80eeb899}
+.math-cast-hud[data-spell="heal"] .bolt-step.is-filled{background:#67d69c;border-color:#b3f5ce}
+#buttons .shield-skill.ready:not(:disabled){border-color:#85e5fa;background:#254453}
+.shield-skill .cooldown-fill{background:#84e7fc}
+.skill-button.shield-skill.ready .skill-state{color:#b5f4ff}
+.math-cast-hud[data-spell="shield"] .rune-pentagon{stroke:#a0f3ff;filter:drop-shadow(0 0 5px #81dcff99)}
+.math-cast-hud[data-spell="shield"] .rune-star{stroke:#a3f4ff99}
+.math-cast-hud[data-spell="shield"] .rune-inner{stroke:#b4f5ffbb}
+.math-cast-hud[data-spell="shield"] .math-choice{border-color:#a1ebfc;background:#204a5be8}
+.math-cast-hud[data-spell="shield"] .bolt-answer math{font-size:23px;color:#bcf5ff}
+.math-cast-hud[data-spell="shield"] .bolt-step.is-current{background:#b4f5ff;border-color:#d4fbff;box-shadow:0 0 12px #9aefff99}
+.math-cast-hud[data-spell="shield"] .bolt-step.is-filled{background:#84e7fc;border-color:#b4f5ff}
+#shield-level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
+#shield-level-picker strong{font-size:13px;color:#b4f5ff;margin-right:4px}
+#shield-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4c8493;background:#183744}
+#shield-level-picker button.selected{background:#2e626f;border-color:#b4f5ff}

@@ -238,3 +238,106 @@ test('bolt event flow refreshes five runes after each term, assembles every rank
     assert.match(get('math-problem').innerHTML,/aria-valuemax="3"/);
   }finally{Math.random=random;}
 });
+
+function defensiveGameMock() {
+  const elements=new Map(),debugs={};
+  const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
+  for(const which of ['bolt','heal','fireball','shield']){
+    const button=makeElement(which+'-debug');button.dataset[which+'Level']='1';debugs[which]=button;
+  }
+  const canvas=get('game');canvas.width=960;canvas.height=600;
+  const state={hpWidth:54,frame:null,time:0,arcs:[]};
+  const context={measureText:s=>({width:String(s).length*12}),
+    fillRect(...args){if(this.fillStyle==='#53df90')state.hpWidth=args[2];},
+    arc(...args){state.arcs.push(args);}};
+  canvas.getContext=()=>new Proxy(context,{get:(o,k)=>o[k]??(()=>{})});
+  const listeners=new Map();
+  globalThis.window={location:{search:'?debug=1'},addEventListener:(k,f)=>listeners.set(k,f)};
+  globalThis.document={getElementById:get,createElement:makeElement,
+    querySelectorAll:selector=>{
+      for(const which of Object.keys(debugs))if(selector===`[data-${which}-level]`)return [debugs[which]];
+      return [];
+    },addEventListener:()=>{},hidden:false};
+  globalThis.requestAnimationFrame=fn=>{state.frame=fn;};
+  return {get,state,key:key=>listeners.get('keydown')({key,repeat:false,preventDefault(){}}),
+    level(which,value){debugs[which].dataset[which+'Level']=String(value);debugs[which].click();},
+    step(){state.time+=50;state.frame(state.time);},hp:()=>Math.round(state.hpWidth/54*100)};
+}
+
+test('shield key 4 casts every derivative rank and blocks real overlapping melee hits without losing HP',async()=>{
+  const {generateBoltSequence}=await import('../src/bolt-sequence.js');
+  const {getSpellAtLevel}=await import('../src/spells.js');
+  const mock=defensiveGameMock(),{get}=mock;
+  const random=Math.random;Math.random=()=>.25;
+  try{
+    await import('../src/game.js?shield-flow');
+    for(let rank=1;rank<=3;rank++){
+      get('restart').click();mock.level('shield',rank);mock.key('4');
+      const expected=generateBoltSequence(getSpellAtLevel('shield',rank).problem,()=>.25);
+      assert.match(get('math-problem').innerHTML,/aria-label="보호막"/);
+      for(let i=0;i<rank;i++){
+        assert.equal(get('shield-count').textContent,0);
+        get('math-answers').children[expected.correctIndices[i]].click();
+        assert.equal(get('math-cast-hud').hidden,i===rank-1);
+      }
+      assert.match(get('toast').textContent,new RegExp(`보호막 ${rank}회 충전`));
+      mock.step();assert.equal(get('shield-count').textContent,rank);
+      assert.ok(mock.state.arcs.some(a=>a[2]===32),'protective sphere is drawn');
+    }
+    // The Lv3 shield remains active from the last iteration.
+    let previous=3,firstBreak=false,hpHit=false;
+    for(let frame=0;frame<450;frame++){
+      mock.step();
+      const charges=Number(get('shield-count').textContent);
+      if(charges<previous){
+        assert.equal(previous-charges,1,'one collision cannot consume multiple charges');
+        assert.equal(mock.hp(),100,'even the last blocked hit cannot spill into HP');
+        previous=charges;
+        if(!firstBreak){
+          firstBreak=true;
+          for(let i=0;i<10;i++)mock.step();
+          assert.equal(Number(get('shield-count').textContent),charges,'overlapping enemies respect the .65s immunity');
+          assert.equal(mock.hp(),100);
+        }
+      }
+      if(mock.hp()<100){hpHit=true;assert.equal(charges,0);assert.equal(mock.hp(),80);break;}
+    }
+    assert.ok(firstBreak);assert.ok(hpHit);
+    get('restart').click();assert.equal(get('shield-count').textContent,0);
+    mock.level('shield',1);get('shield').click();
+    const expected=generateBoltSequence(getSpellAtLevel('shield',1).problem,()=>.25);
+    get('math-answers').children[(expected.question.correct+1)%5].click();
+    assert.match(get('toast').textContent,/오답/);assert.equal(get('shield-count').textContent,0);
+  }finally{Math.random=random;}
+});
+
+test('healing uses refreshed fireball-style integral runes, requires +C, and heals only on completion at all ranks',async()=>{
+  const {generateIntegralSequence}=await import('../src/integral-sequence.js');
+  const {getSpellAtLevel}=await import('../src/spells.js');
+  const mock=defensiveGameMock(),{get}=mock;
+  const random=Math.random;Math.random=()=>.25;
+  try{
+    await import('../src/game.js?healing-flow');
+    for(let rank=1;rank<=3;rank++){
+      get('restart').click();mock.step();
+      for(let frame=0;frame<300&&mock.hp()===100;frame++)mock.step();
+      assert.equal(mock.hp(),80);
+      mock.level('heal',rank);mock.key('2');
+      const expected=generateIntegralSequence(getSpellAtLevel('heal',rank).problem,()=>.25);
+      assert.match(get('math-problem').innerHTML,/aria-label="힐"/);
+      let previous=null;
+      for(let i=0;i<rank;i++){
+        const nodes=[...get('math-answers').children];
+        if(previous)assert.ok(nodes.every((node,index)=>node!==previous[index]));
+        nodes[expected.correctIndices[i]].click();previous=nodes;
+        assert.equal(get('math-cast-hud').hidden,false,'healing cannot finish before +C');
+        assert.doesNotMatch(get('toast').textContent,/정답! HP/);
+      }
+      const final=get('math-answers').children[expected.correctIndices[rank]];
+      assert.match(final.children[1].innerHTML,/<mi>C<\/mi>/);final.click();
+      assert.equal(get('math-cast-hud').hidden,true);
+      assert.match(get('toast').textContent,/정답! HP \+20/);
+      mock.step();assert.equal(mock.hp(),100);assert.match(get('heal-state').textContent,/초/);
+    }
+  }finally{Math.random=random;}
+});

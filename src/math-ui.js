@@ -35,7 +35,7 @@ export function problemMathML(q, spell) {
 }
 
 /** Show the active source term and the derivative assembled so far. */
-export function boltSequenceMathML(sequence) {
+export function boltSequenceMathML(sequence,spellName='번개') {
   const { question, selectedTerms, index } = sequence;
   const input = question.data.inputTerms.map((t, i) => {
     const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
@@ -49,12 +49,12 @@ export function boltSequenceMathML(sequence) {
   }).join('');
   const charge = sequence.correctIndices.map((_, i) =>
     `<span class="bolt-step${i < index ? ' is-filled' : i === index ? ' is-current' : ''}"></span>`).join('');
-  return `<div class="bolt-charge" role="progressbar" aria-label="번개" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>` +
+  return `<div class="bolt-charge" role="progressbar" aria-label="${spellName}" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>` +
     `<div class="bolt-source">${math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`)}</div>` +
     `<div class="bolt-answer${selectedTerms.length ? '' : ' is-empty'}">${math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result || '<mspace width="1.5em"/>'}`)}</div>`;
 }
 
-export function integralSequenceMathML(sequence) {
+export function integralSequenceMathML(sequence,spellName='파이어볼') {
   const {question,selectedTerms,index}=sequence;
   const input=question.data.inputTerms.map((t,i)=>{
     const body=`${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`;
@@ -63,7 +63,7 @@ export function integralSequenceMathML(sequence) {
   const pieces=selectedTerms.map((t,i)=>`${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`).join('');
   const charge=sequence.correctIndices.map((_,i)=>`<span class="bolt-step${i<index?' is-filled':i===index?' is-current':''}"></span>`).join('');
   const constant=sequence.selectedConstant?`${mo('+')}${mi('C')}`:'';
-  return `<div class="bolt-charge" role="progressbar" aria-label="파이어볼" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>`+
+  return `<div class="bolt-charge" role="progressbar" aria-label="${spellName}" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>`+
     math(`${mo('∫')}${mo('(')}${input}${mo(')')}${mi('d')}${mi('x')}`)+
     `<div class="bolt-answer${selectedTerms.length?'':' is-empty'}">${math(`${mo('=')}${pieces||'<mspace width="1.5em"/>'}${constant}`)}</div>`;
 }

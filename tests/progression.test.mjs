@@ -4,11 +4,11 @@ import { createProgression, xpForLevel, addXp, xpToNext } from '../src/progressi
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from '../src/stage-director.js';
 import { ENEMY_TYPES, createEnemy } from '../src/enemy-types.js';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from '../src/spawn-director.js';
-import { selectUpgradeChoices, applyUpgrade, cooldownMultiplier, movementMultiplier, questionTimeMultiplier, worldTimeMultiplier, availableUpgrades } from '../src/upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, spellCooldownSeconds, movementMultiplier, questionTimeMultiplier, worldTimeMultiplier, availableUpgrades } from '../src/upgrades.js';
 import { SPELLS, getSpellAtLevel } from '../src/spells.js';
 import { generateQuestion } from '../src/problem-engine.js';
 
-function mockPlayer(){return {levels:{bolt:1,heal:1},maxHp:100,hp:80,
+function mockPlayer(){return {levels:{bolt:1,heal:1,fireball:1,shield:1},maxHp:100,hp:80,
   bonuses:{swiftness:0,vitality:0,focus:0}};}
 
 test('XP thresholds 24, 52, 100, 168, 256 and carried XP',()=>{
@@ -74,13 +74,14 @@ test('spawn points are generally outside the camera, never on top of player',()=
   }
 });
 
-test('XP level choices contain skills when available and exclude shield',()=>{
+test('XP choices reserve a passive slot and all four spells can be upgraded',()=>{
   const p=mockPlayer();
   const choices=selectUpgradeChoices(p,()=>.5);
   assert.equal(choices.length,3);
-  assert.ok(choices.some(x=>x.id==='bolt'));
-  assert.ok(choices.some(x=>x.id==='heal'));
-  assert.ok(!choices.some(x=>/shield/i.test(x.id)));
+  const skills=['bolt','heal','fireball','shield'];
+  assert.equal(choices.filter(x=>skills.includes(x.id)).length,2);
+  for(const id of skills)assert.ok(availableUpgrades(p).some(x=>x.id===id));
+  assert.ok(applyUpgrade(p,'shield'));assert.equal(p.levels.shield,2);
   assert.ok(applyUpgrade(p,'bolt'));
   assert.equal(p.levels.bolt,2);
   assert.equal(getSpellAtLevel('bolt',2).problem.termCount,2);
@@ -96,11 +97,15 @@ test('XP level choices contain skills when available and exclude shield',()=>{
 
 test('passive bonuses are cumulative and capped',()=>{
   const p=mockPlayer();
-  assert.ok(applyUpgrade(p,'vitality'));assert.equal(p.maxHp,115);assert.equal(p.hp,95);
-  assert.ok(applyUpgrade(p,'swiftness'));assert.equal(movementMultiplier(p),1.08);
-  assert.ok(applyUpgrade(p,'focus'));assert.ok(Math.abs(cooldownMultiplier(p)-.93)<1e-12);
+  assert.ok(applyUpgrade(p,'vitality'));assert.equal(p.maxHp,125);assert.equal(p.hp,105);
+  assert.ok(applyUpgrade(p,'swiftness'));assert.equal(movementMultiplier(p),1.05);
+  p.cd={bolt:5,heal:6,fireball:8,shield:10};
+  assert.ok(applyUpgrade(p,'focus'));assert.equal(spellCooldownSeconds(5,p),4);
+  assert.deepEqual(p.cd,{bolt:4,heal:5,fireball:7,shield:9});
   for(let i=1;i<5;i++)applyUpgrade(p,'focus');
-  assert.ok(Math.abs(cooldownMultiplier(p)-.65)<1e-12);
+  assert.equal(spellCooldownSeconds(5,p),0);
+  assert.equal(spellCooldownSeconds(8,p),3);assert.equal(spellCooldownSeconds(10,p),5);
+  assert.deepEqual(p.cd,{bolt:0,heal:1,fireball:3,shield:5});
   assert.ok(!applyUpgrade(p,'focus'));
 });
 

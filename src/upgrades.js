@@ -1,11 +1,12 @@
-/** Level-up choices; no shield is available in this version. */
+/** Skill ranks and fixed passive upgrade increments. */
 const UPGRADES = Object.freeze({
   bolt: { id: 'bolt', title: '번개 강화', description: '미분 항 +1 · 연쇄 대상 +2 · 피해 +10' },
   heal: { id: 'heal', title: '힐 강화', description: '적분 항 +1 · 회복량 증가' },
   fireball: { id: 'fireball', title: '파이어볼 강화', description: '부정적분 항 +1 · 피해 10 → 30 → 70 · 범위 고정' },
-  swiftness: { id: 'swiftness', title: '기동력', description: '이동속도 +8%' },
-  vitality: { id: 'vitality', title: '생명력', description: '최대 HP +15 · HP 15 회복' },
-  focus: { id: 'focus', title: '집중', description: '모든 마법 쿨타임 7% 감소' },
+  shield: { id: 'shield', title: '보호막 강화', description: '미분 항 +1 · 피해 차단 1 → 2 → 3회' },
+  swiftness: { id: 'swiftness', title: '기동력', description: '이동속도 +5%' },
+  vitality: { id: 'vitality', title: '생명력', description: '최대 HP +25 · HP 25 회복' },
+  focus: { id: 'focus', title: '집중', description: '모든 마법 쿨타임 −1초' },
   timeWarp: { id: 'timeWarp', title: '시간 왜곡', description: '문제 풀이 중 세계 속도 −15% (최대 4회)' },
 });
 
@@ -14,6 +15,7 @@ export function availableUpgrades(player) {
   if (player.levels.bolt < 3) options.push(UPGRADES.bolt);
   if (player.levels.heal < 3) options.push(UPGRADES.heal);
   if (player.levels.fireball < 3) options.push(UPGRADES.fireball);
+  if (player.levels.shield < 3) options.push(UPGRADES.shield);
   if ((player.bonuses.swiftness ?? 0) < 6) options.push(UPGRADES.swiftness);
   if ((player.bonuses.vitality ?? 0) < 6) options.push(UPGRADES.vitality);
   if ((player.bonuses.focus ?? 0) < 5) options.push(UPGRADES.focus);
@@ -24,10 +26,11 @@ export function availableUpgrades(player) {
 /** Prioritize available skill ranks while presenting three randomized options. */
 export function selectUpgradeChoices(player, rng = Math.random) {
   const pool = availableUpgrades(player);
-  const chosen = pool.filter(option => ['bolt','heal','fireball'].includes(option.id));
-  const others = pool.filter(option => !['bolt','heal','fireball'].includes(option.id));
-  // Keep one passive choice available, as before adding the third spell.
-  if(chosen.length>2 && others.length) chosen.splice(Math.min(chosen.length-1,Math.floor(rng()*chosen.length)),1);
+  const chosen = pool.filter(option => ['bolt','heal','fireball','shield'].includes(option.id));
+  const others = pool.filter(option => !['bolt','heal','fireball','shield'].includes(option.id));
+  // Reserve a passive slot while passives remain available.
+  const skillLimit=others.length?2:3;
+  while(chosen.length>skillLimit)chosen.splice(Math.min(chosen.length-1,Math.floor(rng()*chosen.length)),1);
   while (chosen.length < 3 && others.length) {
     const index = Math.min(others.length - 1, Math.floor(rng() * others.length));
     chosen.push(...others.splice(index, 1));
@@ -41,19 +44,23 @@ export function selectUpgradeChoices(player, rng = Math.random) {
 
 export function applyUpgrade(player, id) {
   if (!availableUpgrades(player).some(option => option.id === id)) return false;
-  if (['bolt','heal','fireball'].includes(id)) player.levels[id] = (player.levels[id]??1)+1;
+  if (['bolt','heal','fireball','shield'].includes(id)) player.levels[id] = (player.levels[id]??1)+1;
   else if (id === 'swiftness') player.bonuses.swiftness += 1;
   else if (id === 'vitality') {
     player.bonuses.vitality += 1;
-    player.maxHp += 15;
-    player.hp = Math.min(player.maxHp, player.hp + 15);
-  } else if (id === 'focus') player.bonuses.focus += 1;
+    player.maxHp += 25;
+    player.hp = Math.min(player.maxHp, player.hp + 25);
+  } else if (id === 'focus') {
+    player.bonuses.focus=(player.bonuses.focus??0)+1;
+    // Existing cooldowns receive the same fixed one-second reduction.
+    if(player.cd)for(const key of Object.keys(player.cd))player.cd[key]=Math.max(0,player.cd[key]-1);
+  }
   else if (id === 'timeWarp') player.bonuses.timeWarp = (player.bonuses.timeWarp ?? 0) + 1;
   return true;
 }
 
 export function movementMultiplier(player) {
-  return 1 + player.bonuses.swiftness * .08;
+  return 1 + (player.bonuses.swiftness??0) * .05;
 }
 
 /** World speed is reduced ONLY while choosing an answer, never while targeting. */
@@ -66,6 +73,6 @@ export function worldTimeMultiplier(mode,player) {
   return mode==='question'?questionTimeMultiplier(player):1;
 }
 
-export function cooldownMultiplier(player) {
-  return 1 - player.bonuses.focus * .07;
+export function spellCooldownSeconds(baseSeconds,player) {
+  return Math.max(0,baseSeconds-(player.bonuses.focus??0));
 }

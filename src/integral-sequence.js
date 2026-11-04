@@ -45,7 +45,7 @@ function setStage(sequence) {
 
 /** Integrate each source term, refreshing five runes after every answer, then choose +C. */
 export function generateIntegralSequence(spec,rng=Math.random) {
-  if(spec.kind!=='monomialIntegral')throw new Error('파이어볼에는 부정적분 문제가 필요합니다.');
+  if(spec.kind!=='monomialIntegral')throw new Error('부정적분 조합 문제가 필요합니다.');
   const question=generateQuestion({...spec,answerCount:5},rng);
   const answers=question.data.answerTerms,stages=[];
   question.data.inputTerms.forEach((source,i)=>stages.push(stageChoices(source,answers[i],spec,rng,stages.at(-1))));
