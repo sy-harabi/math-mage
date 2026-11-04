@@ -9,14 +9,14 @@ function cameraUpdate(){camera.x=Math.max(0,Math.min(WORLD_W-W,p.x-W/2));camera.
 const dom={kills:document.getElementById('kills'),bolt:document.getElementById('bolt'),heal:document.getElementById('heal'),boltFill:document.getElementById('bolt-fill'),healFill:document.getElementById('heal-fill'),boltState:document.getElementById('bolt-state'),healState:document.getElementById('heal-state'),cancel:document.getElementById('cancel'),restart:document.getElementById('restart'),toast:document.getElementById('toast'),slow:document.getElementById('slow'),status:document.getElementById('status')};
 const spells=SPELLS;
 const FAIL_SLOW_SECONDS=1.5, FAIL_SPEED_MULT=.5;
-const pent=Array.from({length:5},(_,i)=>({x:Math.sin(i*2*Math.PI/5)*122,y:-Math.cos(i*2*Math.PI/5)*122}));
+const pent=Array.from({length:5},(_,i)=>({x:Math.sin(i*2*Math.PI/5)*158,y:-Math.cos(i*2*Math.PI/5)*158}));
 let p,enemies,particles,bolts,kills,mode,spell,question,target,spawnTimer,last,toastUntil,gameOver;
 const keys=new Set();let touchTarget=null;
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 function say(str,seconds=2){dom.toast.textContent=str;toastUntil=performance.now()+seconds*1000}
 function reset(){p={x:WORLD_W/2,y:WORLD_H/2,hp:100,inv:0,failSlow:0,cd:{bolt:0,heal:0},face:0};enemies=[];particles=[];bolts=[];kills=0;mode='idle';spell=null;question=null;target=null;spawnTimer=2;gameOver=false;touchTarget=null;cameraUpdate();for(let i=0;i<2;i++)spawn();say('1 번개 · 2 힐 · WASD 이동',4);updateUI()}
 function spawn(){if(enemies.length>=3)return;let x,y;for(let t=0;t<20;t++){const angle=Math.random()*TWO,dist=rnd(330,490);x=Math.max(30,Math.min(WORLD_W-30,p.x+Math.cos(angle)*dist));y=Math.max(30,Math.min(WORLD_H-30,p.y+Math.sin(angle)*dist));if(Math.hypot(x-p.x,y-p.y)>260)break}enemies.push({x,y,hp:40,max:40,r:21,attack:0,speed:rnd(54,79),wiggle:Math.random()*6})}
-function begin(which){if(gameOver)return;if(mode!=='idle'){say('먼저 현재 마법을 완료하거나 취소하세요.');return}if(p.cd[which]>0){say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return}spell=which;question=generateQuestion(spells[which].problem);mode='question';say(which==='bolt'?'덧셈 정답을 클릭하세요.':'뺄셈 정답을 클릭하세요.',2)}
+function begin(which){if(gameOver)return;if(mode!=='idle'){say('먼저 현재 마법을 완료하거나 취소하세요.');return}if(p.cd[which]>0){say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return}spell=which;question=generateQuestion(spells[which].problem);mode='question';say(which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2)}
 function endCast(){if(spell)p.cd[spell]=spells[spell].cooldownSeconds;mode='idle';spell=null;question=null;target=null}
 function cancel(){if(mode==='idle')return;say('마법 취소');endCast()}
 function sparkle(x,y,color,count=16){for(let i=0;i<count;i++){let a=Math.random()*TWO,s=rnd(50,240);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.4,max:.75,color})}}
@@ -24,8 +24,8 @@ function selectAnswer(i){if(mode!=='question')return;if(i!==question.correct){sp
 function castEnemy(e){if(mode!=='target')return;let prev=e.hp;e.hp=Math.max(0,e.hp-spells.bolt.power);bolts.push({sx:p.x,sy:p.y,ex:e.x,ey:e.y,ttl:.23});sparkle(e.x,e.y,'#ffe17c',14);if(e.hp<=0){enemies=enemies.filter(v=>v!==e);kills++;say('번개 적중! 적 처치 +1')}else say(`번개 적중! 피해 ${prev-e.hp}`);endCast()}
 function point(ev){let r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height}}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y}}
-function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:Math.max(155,Math.min(W-155,sx)),y:Math.max(155,Math.min(H-155,sy-35))}}
-C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.hypot(t.x-m.x-pent[i].x,t.y-m.y-pent[i].y)<31){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
+function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:Math.max(210,Math.min(W-210,sx)),y:Math.max(195,Math.min(H-215,sy-35))}}
+C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<58 && Math.abs(t.y-m.y-pent[i].y)<32){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
 for(const name of ['bolt','heal','cancel','restart'])dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel, restart:reset})[name]());
@@ -66,7 +66,25 @@ for(let b of bolts){ctx.save();ctx.globalAlpha=Math.min(1,b.ttl/.16);ctx.strokeS
 for(let x of particles){ctx.globalAlpha=Math.max(0,Math.min(1,x.life/x.max));circle(x.x,x.y,3,x.color)}ctx.globalAlpha=1;
 ctx.restore();
 if(p.failSlow>0){ctx.save();ctx.fillStyle='#f5a2b9';ctx.font='700 15px system-ui';ctx.textAlign='center';ctx.fillText(`이동 감속 ${p.failSlow.toFixed(1)}초`,W/2,60);ctx.restore()}
-if(mode==='question'){const m=magicCenter(),pts=pent.map(v=>({x:m.x+v.x,y:m.y+v.y}));ctx.fillStyle='#07162ce8';ctx.strokeStyle=spell==='heal'?'#7ef7b5':'#80bdff';ctx.lineWidth=3;ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(m.x+(v.x-m.x)*.73,m.y+(v.y-m.y)*.73):ctx.moveTo(m.x+(v.x-m.x)*.73,m.y+(v.y-m.y)*.73));ctx.closePath();ctx.lineWidth=1;ctx.stroke();fittedLabel(question.prompt,m.x,m.y-5,220,35);label(spell==='heal'?'회복 마법':'번개 마법',m.x,m.y+34,15,'#9fc8ed','500');pts.forEach((v,i)=>{circle(v.x,v.y,29,'#234971','#b3d9ff',2.5);fittedLabel(String(question.choices[i]),v.x,v.y,47,24)});label('정답을 클릭하세요',m.x,m.y+176,15,'#d5e6ff')}
+if(mode==='question'){
+  const m=magicCenter(),pts=pent.map(v=>({x:m.x+v.x,y:m.y+v.y}));
+  ctx.fillStyle='#07162ce8';ctx.strokeStyle=spell==='heal'?'#7ef7b5':'#80bdff';ctx.lineWidth=3;
+  ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74):ctx.moveTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74));ctx.closePath();ctx.lineWidth=1;ctx.stroke();
+  const lines=question.display ?? [question.prompt];
+  if(lines.length===2){
+    fittedLabel(lines[0],m.x,m.y-23,232,29);
+    fittedLabel(lines[1],m.x,m.y+17,220,30);
+  }else fittedLabel(lines[0],m.x,m.y-4,230,30);
+  label(spell==='heal'?'부정적분 · +C 생략':'도함수',m.x,m.y+63,15,'#a7c8e5','500');
+  // 분수·지수를 읽기 쉽도록 정답 버튼을 원 대신 넓은 타원형으로 표시한다.
+  pts.forEach((v,i)=>{
+    ctx.beginPath();ctx.ellipse(v.x,v.y,55,28,0,0,TWO);
+    ctx.fillStyle='#234971';ctx.fill();ctx.strokeStyle='#b3d9ff';ctx.lineWidth=2.5;ctx.stroke();
+    fittedLabel(String(question.choices[i]),v.x,v.y,100,25);
+  });
+  label('정답을 클릭하세요',m.x,m.y+208,15,'#d5e6ff');
+}
 if(mode==='target'){ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);label('번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');enemies.forEach(e=>circle(e.x-camera.x,e.y-camera.y,e.r+8,null,'#ffe388',3))}
 if(gameOver){ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);label('GAME OVER',W/2,H/2-25,48,'#fff');label(`적 ${kills}마리 처치 · 다시 시작을 누르세요`,W/2,H/2+35,20,'#c6d8ef')}
 }

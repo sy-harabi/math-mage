@@ -1,3 +1,5 @@
+import { term, termKey, termText, derivativeOf, integralOf } from './monomial.js';
+
 /**
  * 스킬·그래픽과 무관한 문제 생성 모듈.
  * 모든 유형은 { prompt: string, answer: string, choices: string[], correct: number }
@@ -83,8 +85,99 @@ function questionBank(spec, rng) {
   return { prompt: String(item.prompt), answer, choices, correct };
 }
 
+/**
+ * 단항식 미분·부정적분. 수식은 구조화된 분자·분모·차수로 비교하므로
+ * 서로 다르게 보이는 동치식이나 중복 보기를 만들지 않는다.
+ */
+function monomialQuestion(spec, rng, kind) {
+  const coefficient = integerRange(spec.coefficient, 'coefficient');
+  const exponent = integerRange(spec.exponent, 'exponent');
+  if (exponent.min < (kind === 'monomialDerivative' ? 1 : 0)) {
+    throw new Error('이 문제 유형에 허용되지 않는 차수입니다.');
+  }
+  const allowedCoefficients = [];
+  for (let a = coefficient.min; a <= coefficient.max; a++) {
+    if (a !== 0) allowedCoefficients.push(a);
+    if (allowedCoefficients.length > 2000) throw new Error('계수 범위가 너무 큽니다.');
+  }
+  if (!allowedCoefficients.length || exponent.max - exponent.min > 100) {
+    throw new Error('사용 가능한 계수·차수 범위가 필요합니다.');
+  }
+  const a = allowedCoefficients[pickIndex(allowedCoefficients.length, rng)];
+  const n = exponent.min + pickIndex(exponent.max - exponent.min + 1, rng);
+  const count = spec.answerCount ?? 5;
+  if (!Number.isInteger(count) || count < 2) throw new Error('answerCount는 2 이상이어야 합니다.');
+
+  const isDerivative = kind === 'monomialDerivative';
+  const correctTerm = isDerivative ? derivativeOf(a, n) : integralOf(a, n);
+  // 문제별 대표적인 실수를 이용한 오답 후보. 정답과 동치인 식은 제외한다.
+  const wrongTerms = isDerivative ? [
+    term(a, 1, n - 1),             // 계수에 차수를 곱하지 않음
+    term(a * n, 1, n),             // 지수를 줄이지 않음
+    term(a + n, 1, n - 1),         // 계수와 차수를 더함
+    term(a * n, 1, n + 1),         // 지수를 증가시킴
+    term(a * n, 1, n >= 2 ? n - 2 : 0),
+    term(a, 1, n),                 // 원래 단항식을 그대로 둠
+    term(a * (n + 1), 1, n - 1),
+    term(a * n + (a < 0 ? -1 : 1), 1, n - 1),
+    term(-a * n, 1, n - 1),        // 부호 반대
+    term(a * n, 1, n + 2),
+  ] : [
+    term(a, 1, n + 1),            // 계수를 나누지 않음
+    term(a * (n + 1), 1, n + 1),  // 계수를 곱함
+    term(a, n + 1, n),            // 지수를 증가시키지 않음
+    term(a, n + 1, n + 2),        // 지수를 2 증가시킴
+    term(a * n, 1, Math.max(0, n - 1)),  // 미분과 혼동
+    term(a, 1, n),                // 원래 단항식 그대로
+    term(a, Math.max(1, n), n + 1), // n+1 대신 n으로 나눔
+    term(-a, n + 1, n + 1),       // 부호 반대
+    term(a, n + 2, n + 1),        // n+2로 나눔
+    term(a, n + 3, n + 1),
+  ];
+  const seen = new Set([termKey(correctTerm)]);
+  const pool = wrongTerms.filter(candidate => {
+    const key = termKey(candidate);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (pool.length < count - 1) {
+    throw new Error('오답 후보가 부족합니다. 문제 범위를 조정하세요.');
+  }
+  const selected = [];
+  while (selected.length < count - 1) {
+    selected.push(...pool.splice(pickIndex(pool.length, rng), 1));
+  }
+  const correct = pickIndex(count, rng);
+  const choiceTerms = [...selected];
+  choiceTerms.splice(correct, 0, correctTerm);
+  const prompt = isDerivative
+    ? `f(x) = ${termText(term(a, 1, n))}, f′(x) = ?`
+    : `∫ ${termText(term(a, 1, n))} dx = ? + C`;
+  const display = isDerivative
+    ? [`f(x) = ${termText(term(a, 1, n))}`, 'f′(x) = ?']
+    : [`∫ ${termText(term(a, 1, n))} dx`, '= ? + C'];
+  return {
+    prompt,
+    display,
+    answer: termText(correctTerm),
+    choices: choiceTerms.map(termText),
+    correct,
+    // 테스트에서 실제 계수·차수를 직접 검증할 수 있도록 원본 식도 반환.
+    data: { coefficient: a, exponent: n, answerTerm: correctTerm, choiceTerms },
+  };
+}
+
+function monomialDerivative(spec, rng) {
+  return monomialQuestion(spec, rng, 'monomialDerivative');
+}
+
+function monomialIntegral(spec, rng) {
+  return monomialQuestion(spec, rng, 'monomialIntegral');
+}
+
 /** 새로운 문제 유형은 여기에 생성 함수를 등록하면 됩니다. */
-export const PROBLEM_GENERATORS = Object.freeze({ arithmetic, questionBank });
+export const PROBLEM_GENERATORS = Object.freeze({ arithmetic, questionBank, monomialDerivative, monomialIntegral });
 
 export function generateQuestion(spec, rng = Math.random) {
   const generator = PROBLEM_GENERATORS[spec?.kind];

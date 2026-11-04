@@ -1,10 +1,10 @@
 /**
- * 마법별 숫자·문제 설정은 이 파일만 수정하면 됩니다.
- * kind: "arithmetic" — +, -, ×, ÷(나누어떨어지는 정수 계산)
- * left/right: 피연산자 범위 (양끝 포함)
- * requireNonNegativeResult: 뺄셈 결과가 음수가 되지 않도록 제한
- * answerCount: 오각형 선택지는 5개 고정 (UI도 5개 기준)
- * distractor: 오답 숫자의 범위 및 정답 주변 거리 (radius)
+ * 마법별 문제 규칙을 바꾸려면 여기의 problem 항목을 수정하세요.
+ * monomialDerivative: f(x)=ax^n의 도함수
+ * monomialIntegral: ∫ax^n dx의 부정적분 (적분상수 C는 문제에만 표기)
+ * coefficient: 0을 제외한 정수 계수 범위 (음수와 양수 모두 출제)
+ * exponent: 원래 함수의 차수 범위, 난이도는 현재 고정
+ * 답안의 분수 계수는 기약분수로 정확하게 표현
  */
 export const SPELLS = Object.freeze({
   bolt: {
@@ -12,13 +12,10 @@ export const SPELLS = Object.freeze({
     cooldownSeconds: 2,
     power: 20,
     problem: {
-      kind: 'arithmetic',
-      operator: '+',
-      left: { min: 0, max: 9 },
-      right: { min: 0, max: 9 },
-      requireNonNegativeResult: true,
+      kind: 'monomialDerivative',
+      coefficient: { min: -5, max: 5 },
+      exponent: { min: 2, max: 4 },
       answerCount: 5,
-      distractor: { min: 0, max: 18, radius: 6 },
     },
   },
   heal: {
@@ -26,13 +23,10 @@ export const SPELLS = Object.freeze({
     cooldownSeconds: 6,
     power: 25,
     problem: {
-      kind: 'arithmetic',
-      operator: '-',
-      left: { min: 0, max: 9 },
-      right: { min: 0, max: 9 },
-      requireNonNegativeResult: true,
+      kind: 'monomialIntegral',
+      coefficient: { min: -5, max: 5 },
+      exponent: { min: 1, max: 3 },
       answerCount: 5,
-      distractor: { min: 0, max: 18, radius: 6 },
     },
   },
 });
