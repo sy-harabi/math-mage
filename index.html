@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>계산 마법사 — 프로토타입</title>
+<link rel="stylesheet" href="./src/styles.css">
+</head><body><div id="wrap">
+<header><div><h1>계산 마법사</h1><small>수학으로 주문을 완성하는 2D 액션 RPG · v0.4</small></div><div class="stats"><span>처치 <b id="kills">0</b></span></div></header>
+<div id="stage"><canvas id="game" width="960" height="600" aria-label="계산 마법사 게임"></canvas><div id="toast" role="status">1 번개 · 2 힐 · WASD 이동</div><div id="slow">슬로모션 ×0.75</div></div>
+<div id="buttons">
+<button id="bolt" class="skill-button bolt-skill" aria-label="번개 마법"><span class="skill-heading"><span>⚡ 1 · 번개</span><span class="skill-state" id="bolt-state">준비</span></span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="bolt-fill"></span></span></button>
+<button id="heal" class="skill-button heal-skill" aria-label="회복 마법"><span class="skill-heading"><span>✚ 2 · 힐</span><span class="skill-state" id="heal-state">준비</span></span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="heal-fill"></span></span></button>
+<button id="cancel">Esc · 취소</button><button id="restart">다시 시작</button><span id="status"></span></div>
+<div id="touchpad" aria-label="태블릿 이동 버튼"><button class="sp">.</button><button data-dir="up">▲</button><button class="sp">.</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div>
+<p id="help"><span class="pc">WASD/방향키 이동 · </span>번개: 단축키/버튼 → 정답 → 적 클릭 · 힐: 단축키/버튼 → 정답 선택 · 오답은 시전 취소와 1.5초간 이동속도 50% 감소 페널티를 줍니다. <span class="pc">태블릿은 방향 버튼으로 이동할 수 있습니다. </span>시전 중 게임은 75% 속도이며 쿨타임은 실제 시간으로 흐릅니다. 하단 쿨타임 바가 가득 차면 마법을 사용할 수 있습니다.</p>
+</div>
+<script type="module" src="./src/game.js"></script></body></html>
