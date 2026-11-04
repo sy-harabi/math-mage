@@ -16,24 +16,17 @@ function path(ctx,points,fill,stroke){
 
 export function drawNeonArena(ctx,camera,w,h){
   ctx.save();ctx.fillStyle='#080d20';ctx.fillRect(0,0,w,h);
-  // Sparse world-anchored markings communicate movement without a busy grid.
+  // World-anchored grid keeps movement readable without resembling attack rings.
+  const spacing=64;
   ctx.strokeStyle='#18223d';ctx.lineWidth=.7;
-  for(let x=Math.floor(camera.x/240)*240;x<camera.x+w;x+=240){
-    for(let y=Math.floor(camera.y/240)*240;y<camera.y+h;y+=240){
-      const sx=x-camera.x,sy=y-camera.y;
-      ctx.beginPath();ctx.moveTo(sx-5,sy);ctx.lineTo(sx+5,sy);
-      ctx.moveTo(sx,sy-5);ctx.lineTo(sx,sy+5);ctx.stroke();
-    }
+  ctx.beginPath();
+  for(let x=Math.floor(camera.x/spacing)*spacing;x<camera.x+w;x+=spacing){
+    ctx.moveTo(x-camera.x,0);ctx.lineTo(x-camera.x,h);
   }
-  const spacing=960;
-  for(let x=Math.floor(camera.x/spacing)*spacing;x<camera.x+w+spacing;x+=spacing){
-    for(let y=Math.floor(camera.y/spacing)*spacing;y<camera.y+h+spacing;y+=spacing){
-      const sx=x-camera.x,sy=y-camera.y;
-      ring(ctx,sx,sy,220,'#192747',1);
-      ring(ctx,sx,sy,232,'#111c35',1,0,Math.PI*1.5);
-      path(ctx,[[sx,sy-8],[sx+8,sy],[sx,sy+8],[sx-8,sy]],'#080d20','#20335a');
-    }
+  for(let y=Math.floor(camera.y/spacing)*spacing;y<camera.y+h;y+=spacing){
+    ctx.moveTo(0,y-camera.y);ctx.lineTo(w,y-camera.y);
   }
+  ctx.stroke();
   ctx.restore();
 }
 
