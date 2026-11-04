@@ -41,7 +41,7 @@ test('미분, 적분 Lv1: 임의의 2,000문제 — 정답 및 고유 보기 5�
 
 test('번개 Lv2: 서로 다른 차수의 두 항을 정확히 미분하고 5개의 동치 아닌 보기를 낸다',()=>{
   const level2=getSpellAtLevel('bolt',2);
-  assert.equal(level2.chainTargets,2);
+  assert.equal(level2.chainTargets,3);
   assert.equal(level2.problem.termCount,2);
   assert.equal(SPELLS.bolt.problem.termCount,1,'레벨2 조회가 레벨1 설정을 바꾸면 안 된다');
   for(let i=0;i<2000;i++){
@@ -122,7 +122,7 @@ test('설정 오류: 계수 0, 불가능한 항 수, 가중치 합계 오류',()
 
 test('번개 Lv3: 3항 다항식 미분, 보기 5개 고유성 및 Lv1·Lv2 설정 보존',()=>{
   const spec=getSpellAtLevel('bolt',3);
-  assert.equal(spec.chainTargets,3);
+  assert.equal(spec.chainTargets,5);
   assert.equal(spec.problem.termCount,3);
   assert.equal(getSpellAtLevel('bolt',1).problem.termCount,1);
   assert.equal(getSpellAtLevel('bolt',2).problem.termCount,2);

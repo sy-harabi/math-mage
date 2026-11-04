@@ -1,6 +1,6 @@
 /** Level-up choices; no shield is available in this version. */
 const UPGRADES = Object.freeze({
-  bolt: { id: 'bolt', title: '번개 강화', description: '미분 항 +1 · 연쇄 대상 +1' },
+  bolt: { id: 'bolt', title: '번개 강화', description: '미분 항 +1 · 연쇄 대상 +2 · 피해 20 고정' },
   heal: { id: 'heal', title: '힐 강화', description: '적분 항 +1 · 회복량 증가' },
   swiftness: { id: 'swiftness', title: '기동력', description: '이동속도 +8%' },
   vitality: { id: 'vitality', title: '생명력', description: '최대 HP +15 · HP 15 회복' },
