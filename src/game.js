@@ -32,7 +32,7 @@ const dom = {
   upgradeHeading: document.getElementById('upgrade-heading'), upgradeOptions: document.getElementById('upgrade-options'),
   victoryOverlay: document.getElementById('victory-overlay'), victoryTime: document.getElementById('victory-time'),
   victoryStats: document.getElementById('victory-stats'), victoryRestart:document.getElementById('victory-restart'),
-  mathHud: document.getElementById('math-cast-hud'),
+  mathHud: document.getElementById('math-cast-hud'), runeFrame: document.getElementById('rune-frame'),
   mathProblem: document.getElementById('math-problem'), mathAnswers: document.getElementById('math-answers'),
 };
 const camera = {x: 0, y: 0};
@@ -48,6 +48,12 @@ function cameraUpdate() {
   // Keep world framing fixed regardless of whether the ritual is visible.
   const next=centeredCamera(p,{w:W,h:H},{w:WORLD_W,h:WORLD_H});
   camera.x=next.x;camera.y=next.y;
+}
+/** Center the pentagram on the moving hero in screen coordinates. */
+function updateRunePosition() {
+  if(mode!=='question')return;
+  dom.runeFrame.style.left=((p.x-camera.x)/W*100)+'%';
+  dom.runeFrame.style.top=((p.y-camera.y)/H*100)+'%';
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
@@ -125,6 +131,7 @@ function displayMathQuestion() {
     dom.mathAnswers.append(button);
   });
   dom.mathHud.hidden=false;
+  updateRunePosition();
 }
 function endCast() {
   dom.mathHud.hidden=true;
@@ -521,7 +528,7 @@ function loop(ts){
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
     advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='upgrade'&&mode!=='victory');
-    tick(Math.min(.05,rawDt));draw();updateUI();
+    tick(Math.min(.05,rawDt));updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
 }

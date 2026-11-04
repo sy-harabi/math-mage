@@ -32,3 +32,17 @@ test('game camera does not depend on spell mode or move left for rituals',()=>{
   assert.doesNotMatch(body,/mode\s*===?\s*['"]question/);
   assert.doesNotMatch(body,/W\s*\*\s*\.42/);
 });
+
+test('pentagram tracks the hero in world coordinates regardless of camera clamping',()=>{
+  const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8');
+  assert.match(source,/runeFrame\.style\.left=\(\(p\.x-camera\.x\)\/W\*100\)/);
+  assert.match(source,/runeFrame\.style\.top=\(\(p\.y-camera\.y\)\/H\*100\)/);
+  assert.match(source,/updateRunePosition\(\);draw\(\);updateUI\(\)/);
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  assert.match(html,/id="rune-frame"/);
+});
+test('three-term MathML uses exactly 30 percent larger text',()=>{
+  const css=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
+  assert.match(css,/data-terms="3"\] \.math-problem math\{font-size:18\.2px\}/);
+  assert.match(css,/data-terms="3"\] \.answer-formula math\{font-size:14\.3px\}/);
+});
