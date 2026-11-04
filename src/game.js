@@ -12,6 +12,8 @@ const FAIL_SLOW_SECONDS=1.5, FAIL_SPEED_MULT=.5;
 const pent=Array.from({length:5},(_,i)=>({x:Math.sin(i*2*Math.PI/5)*158,y:-Math.cos(i*2*Math.PI/5)*158}));
 let p,enemies,particles,bolts,kills,mode,spell,question,target,spawnTimer,last,toastUntil,gameOver;
 const keys=new Set();let touchTarget=null;
+const manualMoveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
+const hasManualMoveKey=()=>[...manualMoveKeys].some(key=>keys.has(key));
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 function say(str,seconds=2){dom.toast.textContent=str;toastUntil=performance.now()+seconds*1000}
 function reset(){p={x:WORLD_W/2,y:WORLD_H/2,hp:100,inv:0,failSlow:0,cd:{bolt:0,heal:0},face:0};enemies=[];particles=[];bolts=[];kills=0;mode='idle';spell=null;question=null;target=null;spawnTimer=2;gameOver=false;touchTarget=null;cameraUpdate();for(let i=0;i<2;i++)spawn();say('1 번개 · 2 힐 · WASD 이동',4);updateUI()}
@@ -25,9 +27,9 @@ function castEnemy(e){if(mode!=='target')return;let prev=e.hp;e.hp=Math.max(0,e.
 function point(ev){let r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height}}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y}}
 function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:Math.max(210,Math.min(W-210,sx)),y:Math.max(195,Math.min(H-215,sy-35))}}
-C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<72 && Math.abs(t.y-m.y-pent[i].y)<34){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
+C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<72 && Math.abs(t.y-m.y-pent[i].y)<34){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=hasManualMoveKey()?null:worldPoint(t)});
 C.addEventListener('contextmenu',e=>e.preventDefault());
-window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(manualMoveKeys.has(k))touchTarget=null;if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
 for(const name of ['bolt','heal','cancel','restart'])dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel, restart:reset})[name]());
 const directions={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright'};
 for(let b of document.querySelectorAll('[data-dir]')){const k=directions[b.dataset.dir];b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(k);touchTarget=null});for(let n of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(n,()=>keys.delete(k))}
