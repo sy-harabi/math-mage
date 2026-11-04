@@ -2,7 +2,7 @@ import { SPELLS, getSpellAtLevel } from './spells.js?v=bolt-20-135';
 import { generateQuestion } from './problem-engine.js';
 import { resolveChainHits, healingGained } from './combat.js';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
-import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js';
+import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=bolt-20-135';

@@ -56,8 +56,9 @@ test('enemy types: HP, XP, speeds, attack, and stage scaling',()=>{
 });
 
 test('spawn intervals and weighted monster selection',()=>{
-  assert.deepEqual([1,2,3,4,5].map(s=>stageSpawnConfig(s).interval),[6,5,4,3,2]);
-  assert.equal(randomEnemyType(stageSpawnConfig(1),()=>.9),'basic');
+  assert.deepEqual([1,2,3,4,5].map(s=>stageSpawnConfig(s).interval),[4,3.5,3,2.5,2]);
+  assert.equal(randomEnemyType(stageSpawnConfig(1),()=>.79),'basic');
+  assert.equal(randomEnemyType(stageSpawnConfig(1),()=>.9),'fast');
   assert.equal(randomEnemyType(stageSpawnConfig(2),()=>.71),'fast');
   assert.equal(randomEnemyType(stageSpawnConfig(3),()=>.9),'ranged');
   assert.ok(stageSpawnConfig(15).interval>0);

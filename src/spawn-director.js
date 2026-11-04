@@ -1,10 +1,10 @@
 /** Unlimited periodic spawns. Weights are normalized per stage. */
 const EARLY_STAGES = Object.freeze({
-  1: { interval: 6, weights: { basic: 1 } },
-  2: { interval: 5, weights: { basic: .7, fast: .3 } },
-  3: { interval: 4, weights: { basic: .5, fast: .25, ranged: .25 } },
-  4: { interval: 3, weights: { basic: .4, fast: .35, ranged: .25 } },
-  5: { interval: 2, weights: { basic: .45, fast: .3, ranged: .25 } },
+  1: { interval: 4, weights: { basic: .8, fast: .2 } },
+  2: { interval: 3.5, weights: { basic: .65, fast: .35 } },
+  3: { interval: 3, weights: { basic: .45, fast: .35, ranged: .2 } },
+  4: { interval: 2.5, weights: { basic: .35, fast: .4, ranged: .25 } },
+  5: { interval: 2, weights: { basic: .3, fast: .4, ranged: .3 } },
 });
 
 export function stageSpawnConfig(stage) {
