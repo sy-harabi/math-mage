@@ -11,14 +11,14 @@ import { generateQuestion } from '../src/problem-engine.js';
 function mockPlayer(){return {levels:{bolt:1,heal:1,fireball:1,shield:1},maxHp:100,hp:80,
   bonuses:{swiftness:0,vitality:0,focus:0}};}
 
-test('XP thresholds 24, 52, 100, 168, 256 and carried XP',()=>{
-  assert.deepEqual(Array.from({length:6},(_,i)=>xpForLevel(i+1)),[0,24,52,100,168,256]);
+test('faster XP curve carries excess XP and queues every earned choice',()=>{
+  assert.deepEqual(Array.from({length:6},(_,i)=>xpForLevel(i+1)),[0,12,30,54,84,120]);
   const xp=createProgression();
-  assert.equal(addXp(xp,23),0);assert.equal(xp.level,1);
+  assert.equal(addXp(xp,11),0);assert.equal(xp.level,1);
   assert.equal(addXp(xp,1),1);assert.equal(xp.pendingUpgrades,1);
-  assert.equal(addXp(xp,80),2);assert.equal(xp.level,4);
+  assert.equal(addXp(xp,45),2);assert.equal(xp.level,4);
   assert.equal(xp.pendingUpgrades,3);
-  assert.deepEqual(xpToNext(xp),{current:4,required:68});
+  assert.deepEqual(xpToNext(xp),{current:3,required:30});
 });
 
 test('stage gauge: 0.6% per second; kill bonus independent from XP',()=>{
@@ -152,4 +152,33 @@ test('time warp: no slow at start, only during solving after upgrades, never whi
   for(let i=0;i<3;i++)assert.ok(applyUpgrade(p,'timeWarp'));
   assert.ok(Math.abs(worldTimeMultiplier('question',p)-.4)<1e-12);
   assert.equal(worldTimeMultiplier('target',p),1);
+});
+
+
+test('unlearned spells are offered at Lv1 and then upgrade through Lv3 without skipping ranks',()=>{
+  const p=mockPlayer();p.levels={bolt:1,heal:0,fireball:0,shield:0};
+  for(const id of ['heal','fireball','shield']){
+    const option=availableUpgrades(p).find(o=>o.id===id);
+    assert.match(option.title,/습득/);assert.doesNotMatch(option.description,/항 \+1/);
+    assert.ok(applyUpgrade(p,id));assert.equal(p.levels[id],1);
+    assert.equal(getSpellAtLevel(id,p.levels[id]).problem.termCount,1);
+    assert.match(availableUpgrades(p).find(o=>o.id===id).title,/강화/);
+    assert.ok(applyUpgrade(p,id));assert.equal(p.levels[id],2);
+    assert.ok(applyUpgrade(p,id));assert.equal(p.levels[id],3);
+    assert.equal(applyUpgrade(p,id),false);
+  }
+  const legacy=mockPlayer();delete legacy.levels.shield;
+  assert.ok(applyUpgrade(legacy,'shield'));assert.equal(legacy.levels.shield,1);
+});
+
+test('first upgrade needs two basic kills; lightning cooldown uses 2/5/8 with fixed focus reduction',()=>{
+  const xp=createProgression(),p=mockPlayer();
+  assert.equal(addXp(xp,ENEMY_TYPES.basic.xp),0);
+  assert.equal(addXp(xp,ENEMY_TYPES.basic.xp),1);
+  assert.equal(xp.level,2);assert.deepEqual(xpToNext(xp),{current:0,required:18});
+  assert.deepEqual([1,2,3].map(rank=>getSpellAtLevel('bolt',rank).cooldownSeconds),[2,5,8]);
+  applyUpgrade(p,'focus');
+  assert.deepEqual([1,2,3].map(rank=>spellCooldownSeconds(getSpellAtLevel('bolt',rank).cooldownSeconds,p)),[1,4,7]);
+  applyUpgrade(p,'focus');
+  assert.equal(spellCooldownSeconds(getSpellAtLevel('bolt',1).cooldownSeconds,p),0);
 });

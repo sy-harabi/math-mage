@@ -1,11 +1,9 @@
 /** Cumulative XP thresholds, independent of stage transitions. */
 export function xpForLevel(level) {
   if (!Number.isInteger(level) || level < 1) throw new Error('Invalid character level');
-  if (level === 1) return 0;
-  if (level === 2) return 24;
-  let total = 52;
-  for (let n = 4; n <= level; n++) total += 20 * n - 32;
-  return total;
+  // Next-level costs grow gently: 12, 18, 24, 30, 36, ... XP.
+  // Two basic slimes unlock the first choice; extra ranks cover learning spells.
+  return 3 * (level - 1) * (level + 2);
 }
 
 export function createProgression() {
@@ -30,3 +28,4 @@ export function xpToNext(state) {
     required: xpForLevel(state.level + 1) - xpForLevel(state.level),
   };
 }
+

@@ -13,12 +13,12 @@ const INTEGRAL_PROBLEM = {
 };
 export const SPELLS = Object.freeze({
   bolt: {
-    name: '번개', cooldownSeconds: 5, damageByJump: [20],
+    name: '번개', cooldownSeconds: 2, damageByJump: [20],
     chainTargets: 1, chainRange: 260,
     problem: DERIVATIVE_PROBLEM,
     levels: {
-      2: { cooldownSeconds: 8, chainTargets: 3, damageByJump: [30, 30, 30], problem: { termCount: 2 } },
-      3: { cooldownSeconds: 10, chainTargets: 5, damageByJump: [40, 40, 40, 40, 40], problem: { termCount: 3 } },
+      2: { cooldownSeconds: 5, chainTargets: 3, damageByJump: [30, 30, 30], problem: { termCount: 2 } },
+      3: { cooldownSeconds: 8, chainTargets: 5, damageByJump: [40, 40, 40, 40, 40], problem: { termCount: 3 } },
     },
   },
   heal: {
@@ -59,3 +59,4 @@ export function getSpellAtLevel(id, level = 1) {
   return { ...base, ...levelSettings,
     problem: { ...base.problem, ...levelSettings.problem } };
 }
+

@@ -10,12 +10,23 @@ const UPGRADES = Object.freeze({
   timeWarp: { id: 'timeWarp', title: '시간 왜곡', description: '문제 풀이 중 세계 속도 −15% (최대 4회)' },
 });
 
+const SKILL_IDS = ['bolt','heal','fireball','shield'];
+const LEARN_DESCRIPTIONS = {
+  bolt: '1항 미분 · 1마리에게 피해 20 · 쿨타임 2초',
+  heal: '1항 부정적분 + C · HP 20 회복 · 쿨타임 6초',
+  fireball: '1항 부정적분 + C · 범위 피해 10 · 쿨타임 5초',
+  shield: '1항 미분 · 피해 1회 차단 · 쿨타임 5초',
+};
+
 export function availableUpgrades(player) {
   const options = [];
-  if (player.levels.bolt < 3) options.push(UPGRADES.bolt);
-  if (player.levels.heal < 3) options.push(UPGRADES.heal);
-  if (player.levels.fireball < 3) options.push(UPGRADES.fireball);
-  if (player.levels.shield < 3) options.push(UPGRADES.shield);
+  for (const id of SKILL_IDS) {
+    const level = player.levels[id] ?? 0;
+    if (level >= 3) continue;
+    options.push(level === 0
+      ? { ...UPGRADES[id], title: UPGRADES[id].title.replace('강화', '습득'), description: LEARN_DESCRIPTIONS[id] }
+      : UPGRADES[id]);
+  }
   if ((player.bonuses.swiftness ?? 0) < 6) options.push(UPGRADES.swiftness);
   if ((player.bonuses.vitality ?? 0) < 6) options.push(UPGRADES.vitality);
   if ((player.bonuses.focus ?? 0) < 5) options.push(UPGRADES.focus);
@@ -44,7 +55,7 @@ export function selectUpgradeChoices(player, rng = Math.random) {
 
 export function applyUpgrade(player, id) {
   if (!availableUpgrades(player).some(option => option.id === id)) return false;
-  if (['bolt','heal','fireball','shield'].includes(id)) player.levels[id] = (player.levels[id]??1)+1;
+  if (['bolt','heal','fireball','shield'].includes(id)) player.levels[id] = (player.levels[id]??0)+1;
   else if (id === 'swiftness') player.bonuses.swiftness += 1;
   else if (id === 'vitality') {
     player.bonuses.vitality += 1;
@@ -76,3 +87,4 @@ export function worldTimeMultiplier(mode,player) {
 export function spellCooldownSeconds(baseSeconds,player) {
   return Math.max(0,baseSeconds-(player.bonuses.focus??0));
 }
+

@@ -1,11 +1,11 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=1.6.0';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.8.0';
 import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
-import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.6.0';
+import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.0';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
 import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.6.0';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
@@ -79,7 +79,7 @@ function say(message, seconds=2.5) {
 }
 function newPlayer() {
   return {x:WORLD_W/2,y:WORLD_H/2,hp:100,maxHp:100,inv:0,failSlow:0,shields:0,shieldFlash:0,
-    cd:{bolt:0,heal:0,fireball:0,shield:0}, levels:{bolt:1,heal:1,fireball:1,shield:1}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
+    cd:{bolt:0,heal:0,fireball:0,shield:0}, levels:{bolt:1,heal:0,fireball:0,shield:0}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
 function reset() {
   p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
@@ -127,6 +127,7 @@ function spawnEnemy(type, x, y) {
 }
 function begin(which) {
   if(gameOver || mode!=='idle') return;
+  if(!(p.levels[which]>0)) return;
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
   integralSequence=activeCastConfig.problem.kind==='monomialIntegral'?generateIntegralSequence(activeCastConfig.problem):null;
@@ -240,13 +241,13 @@ function openUpgrade() {
   currentChoices=selectUpgradeChoices(p);
   if(!currentChoices.length){progression.pendingUpgrades=0;return;}
   mode='upgrade';touchTarget=null;keys.clear();
-  dom.upgradeHeading.textContent=`캐릭터 Lv${progression.level} · 강화 선택`;
+  dom.upgradeHeading.textContent=`캐릭터 Lv${progression.level} · 성장 선택`;
   dom.upgradeOptions.replaceChildren();
   for(const option of currentChoices){
     const btn=document.createElement('button');btn.type='button';btn.className='upgrade-option';
     const strong=document.createElement('strong');strong.textContent=option.title;
     const small=document.createElement('small');
-    const next=SKILL_IDS.includes(option.id)?` → Lv${p.levels[option.id]+1}`:'';
+    const next=SKILL_IDS.includes(option.id)?` → Lv${(p.levels[option.id]??0)+1}`:'';
     small.textContent=option.description+next;
     btn.append(strong,small);
     guardUpgradeButton(btn,()=>selectUpgrade(option.id));
@@ -259,7 +260,7 @@ function selectUpgrade(id) {
   if(!applyUpgrade(p,id))return;
   progression.pendingUpgrades=Math.max(0,progression.pendingUpgrades-1);
   dom.upgradeOverlay.hidden=true;mode='idle';currentChoices=[];
-  say('강화 완료 · 다음 전투를 준비하세요',2);
+  say(SKILL_IDS.includes(id)?`${SPELLS[id].name} Lv${p.levels[id]} · 선택 완료`:'강화 완료 · 다음 전투를 준비하세요',2);
   checkMilestones();
 }
 function checkMilestones() {
@@ -575,6 +576,15 @@ function updateUI(){
   dom.slow.style.display=showWarp?'block':'none';
   dom.slow.textContent=showWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
   for(const k of SKILL_IDS){
+    const learned=p.levels[k]>0;
+    dom[k].classList.toggle('locked',!learned);
+    if(!learned){
+      dom[k].disabled=true;
+      dom[k].classList.toggle('active',false);dom[k].classList.toggle('ready',false);
+      dom[k+'Fill'].style.width='0%';
+      dom[k+'State'].textContent='미습득';
+      continue;
+    }
     const ready=p.cd[k]<=0,cdTotal=spellCooldownSeconds(getSpellAtLevel(k,p.levels[k]).cooldownSeconds,p);
     const fill=ready?100:100*clamp(1-p.cd[k]/cdTotal,0,1);
     dom[k].disabled=gameOver||mode!=='idle'||!ready;
@@ -583,7 +593,7 @@ function updateUI(){
     dom[k+'State'].textContent=`Lv${p.levels[k]} · `+(ready?'준비':p.cd[k].toFixed(1)+'초');
   }
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
-  dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
+  dom.status.textContent=mode==='upgrade'?'레벨업 · 성장 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
     'WASD 이동 · 클릭 이동 / 조준 · 1–4 마법';
   if(DEBUG){for(const which of SKILL_IDS){
@@ -607,3 +617,4 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).obser
 else window.addEventListener('resize',updateRuneScale);
 updateRuneScale();reset();requestAnimationFrame(loop);
 })();
+

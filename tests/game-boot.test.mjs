@@ -41,6 +41,16 @@ test('game boots with native MathML choices and WASD active during question', as
   assert.equal(get('run-time').textContent,'00:00.00');
   assert.equal(get('math-cast-hud').hidden,true);
   assert.ok(get('enemies-count')!==null);
+  assert.equal(get('bolt').disabled,false);
+  assert.equal(get('bolt-state').textContent,'Lv1 · 준비');
+  assert.equal(get('xp-label').textContent,'0/12');
+  for(const [id,key] of [['fireball','2'],['shield','3'],['heal','4']]){
+    assert.equal(get(id).disabled,true);assert.equal(get(id+'-state').textContent,'미습득');
+    assert.equal(get(id+'-fill').style.width,'0%');
+    get(id).click();assert.equal(get('math-cast-hud').hidden,true);
+    windowListeners.get('keydown')({key,repeat:false,preventDefault(){}});
+    assert.equal(get('math-cast-hud').hidden,true);
+  }
   windowListeners.get('keydown')({key:'1',repeat:false,preventDefault(){}});
   assert.equal(get('math-cast-hud').hidden,false);
   assert.equal(get('math-answers').children.length,5);
@@ -158,7 +168,20 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
     assert.ok(target.clientX>=0&&target.clientX<=960&&target.clientY>=0&&target.clientY<=600);
     canvas._listeners.get('pointerdown')(target);
     assert.match(get('toast').textContent,/2개체 타격 · 2마리 처치/,'both enemies take damage immediately, before a frame');
-    frame(701);assert.equal(get('kills').textContent,2);assert.equal(get('xp-label').textContent,'12/24');
+    frame(701);assert.equal(get('kills').textContent,2);assert.equal(get('xp-label').textContent,'0/18');
+    assert.equal(get('character-level').textContent,2);
+    assert.equal(get('upgrade-overlay').hidden,false);
+    const learn=get('upgrade-options').children.find(button=>button.children[0].textContent==='보호막 습득');
+    assert.ok(learn);assert.match(learn.children[1].textContent,/→ Lv1/);
+    learn._listeners.get('click')({detail:0});
+    frame(751);assert.equal(get('upgrade-overlay').hidden,true);
+    assert.equal(get('shield').disabled,false);assert.equal(get('shield-state').textContent,'Lv1 · 준비');
+    key('3');assert.equal(get('math-cast-hud').hidden,false);
+    assert.equal(get('math-cast-hud').dataset.terms,'1');
+    get('restart').click();
+    for(const id of ['heal','fireball','shield']){
+      assert.equal(get(id).disabled,true);assert.equal(get(id+'-state').textContent,'미습득');
+    }
     for(let position=0;position<4;position++){
       get('restart').click();debug.dataset.fireballLevel='3';debug.click();get('fireball').click();
       const expected=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
@@ -216,8 +239,8 @@ test('bolt event flow refreshes five runes after each term, assembles every rank
       key('Escape');assert.equal(get('math-cast-hud').hidden,true);
       frame(101);
       const remaining=Number(get('bolt-state').textContent.match(/· ([\d.]+)초/)[1]);
-      assert.ok(Math.abs(remaining-([5,8,10][level-1]-.05))<.051,'cancel applies the correct rank cooldown');
-      assert.ok(Math.abs(parseFloat(get('bolt-fill').style.width)-100*.05/([5,8,10][level-1]))<1e-8,'bar starts near zero for every rank');
+      assert.ok(Math.abs(remaining-([2,5,8][level-1]-.05))<.051,'cancel applies the correct rank cooldown');
+      assert.ok(Math.abs(parseFloat(get('bolt-fill').style.width)-100*.05/([2,5,8][level-1]))<1e-8,'bar starts near zero for every rank');
     }
     for(let position=0;position<3;position++){
       get('restart').click();debug.dataset.boltLevel='3';debug.click();key('1');
@@ -341,3 +364,4 @@ test('healing uses refreshed fireball-style integral runes, requires +C, and hea
     }
   }finally{Math.random=random;}
 });
+
