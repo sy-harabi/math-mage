@@ -204,7 +204,10 @@ function polynomialQuestion(spec, rng, kind) {
       : termCount===2 ? ['f(x) =',expression,'f′(x) = ?']
       : ['f(x) =',polynomialText(originalTerms.slice(0,2)),
         polynomialChoiceLines(originalTerms)[2],'f′(x) = ?']
-    : [`∫ ${expression} dx`,'= ?'];
+    : termCount===1 ? [`∫ ${expression} dx`,'= ?']
+      : termCount===2 ? ['∫',`${expression} dx`,'= ?']
+      : ['∫',polynomialText(originalTerms.slice(0,2)),
+        `${polynomialChoiceLines(originalTerms)[2]} dx`,'= ?'];
   return {
     prompt: derivative?`f(x) = ${expression}, f′(x) = ?`:`∫ ${expression} dx = ?`,
     display,answer:format(choicesWithMeaning[correct]),

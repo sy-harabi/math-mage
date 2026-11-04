@@ -20,3 +20,10 @@
 #level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
 #level-picker button.selected{background:#456687;border-color:#f1cd76;box-shadow:inset 0 0 0 1px #f1cd76;color:white}
 @media(max-width:640px){#level-picker strong{width:100%}#level-picker button{flex:1;padding:7px 5px;font-size:11px}}
+
+/* v0.9: both skills have independent, persistent level-preview selectors. */
+#heal-level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
+#heal-level-picker strong{font-size:13px;color:#c8defa;margin-right:4px}
+#heal-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
+#heal-level-picker button.selected{background:#315c51;border-color:#71e2a1;box-shadow:inset 0 0 0 1px #71e2a1;color:white}
+@media(max-width:640px){#heal-level-picker strong{width:100%}#heal-level-picker button{flex:1;padding:7px 5px;font-size:11px}}

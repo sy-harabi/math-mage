@@ -15,3 +15,21 @@ export function resolveChainTargets(primary, enemies, maxTargets = 1, range = 26
   }
   return targets;
 }
+
+/** The ordered jumps have different damage amounts at each level. */
+export function resolveChainHits(primary, enemies, damageByJump, range = 260) {
+  if (!Array.isArray(damageByJump) || !damageByJump.length ||
+      !damageByJump.every(dmg => Number.isFinite(dmg) && dmg > 0)) {
+    throw new Error('연쇄 피해 설정이 올바르지 않습니다.');
+  }
+  return resolveChainTargets(primary, enemies, damageByJump.length, range)
+    .map((enemy, index) => ({ enemy, damage: damageByJump[index] }));
+}
+
+/** Real healing can never exceed the character's maximum HP. */
+export function healingGained(current, maximum, power) {
+  if (![current,maximum,power].every(Number.isFinite) || maximum <= 0 || power < 0) {
+    throw new Error('치유 설정이 올바르지 않습니다.');
+  }
+  return Math.max(0, Math.min(maximum - current, power));
+}

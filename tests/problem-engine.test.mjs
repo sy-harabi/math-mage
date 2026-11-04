@@ -135,3 +135,31 @@ test('번개 Lv3: 3항 다항식 미분, 보기 5개 고유성 및 Lv1·Lv2 설�
     assert.ok(q.choiceLines.every(lines=>lines.length>=1 && lines.length<=3));
   }
 });
+
+
+test('힐 Lv1~Lv3은 각각 1·2·3항 부정적분과 + C 정답을 생성한다',()=>{
+  for(let level=1;level<=3;level++) {
+    const spec=getSpellAtLevel('heal',level).problem;
+    assert.equal(spec.termCount,level);
+    for(let i=0;i<1500;i++) {
+      const q=generateQuestion(spec);
+      inspect(q,spec);
+      assert.equal(q.data.inputTerms.length,level);
+      assert.equal(new Set(q.data.inputTerms.map(t=>t.power)).size,level);
+      assert.equal(q.display.length, level===1?2:level===2?3:4);
+      assert.equal(q.answer.endsWith(' + C'),true);
+      assert.ok(q.choiceLines.every(lines=>lines.length<=level));
+    }
+  }
+});
+
+test('각 스킬의 레벨 설정은 서로 오염되지 않고 2항/3항 변경이 독립적이다',()=>{
+  assert.equal(getSpellAtLevel('bolt',1).problem.termCount,1);
+  assert.equal(getSpellAtLevel('bolt',2).problem.termCount,2);
+  assert.equal(getSpellAtLevel('bolt',3).problem.termCount,3);
+  assert.equal(getSpellAtLevel('heal',1).problem.termCount,1);
+  assert.equal(getSpellAtLevel('heal',2).problem.termCount,2);
+  assert.equal(getSpellAtLevel('heal',3).problem.termCount,3);
+  assert.equal(SPELLS.heal.problem.termCount,1);
+  assert.equal(SPELLS.bolt.problem.termCount,1);
+});
