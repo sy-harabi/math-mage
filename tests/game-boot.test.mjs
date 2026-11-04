@@ -144,6 +144,9 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
       arcs.length=0;frame(151);
       assert.ok(arcs.some(a=>a[0]===preview[0]&&a[1]===preview[1]&&a[2]===42),'blast uses the exact preview center/radius');
       assert.match(get('fireball-state').textContent,/초/);
+      const remaining=Number(get('fireball-state').textContent.match(/· ([\d.]+)초/)[1]);
+      assert.ok(Math.abs(remaining-(4*level-.05))<.051,'remaining cooldown uses this spell rank');
+      assert.ok(Math.abs(parseFloat(get('fireball-fill').style.width)-100*.05/(4*level))<1e-8,'bar uses the same rank duration');
     }
     // Bring the two initial slimes into view, then verify real damage/XP resolve in the click handler.
     get('restart').click();debug.dataset.fireballLevel='3';debug.click();key('3');key('d');
@@ -211,6 +214,10 @@ test('bolt event flow refreshes five runes after each term, assembles every rank
       }
       assert.match(get('toast').textContent,/번개를 맞힐 적/);
       key('Escape');assert.equal(get('math-cast-hud').hidden,true);
+      frame(101);
+      const remaining=Number(get('bolt-state').textContent.match(/· ([\d.]+)초/)[1]);
+      assert.ok(Math.abs(remaining-(4*level-.05))<.051,'cancel applies the correct rank cooldown');
+      assert.ok(Math.abs(parseFloat(get('bolt-fill').style.width)-100*.05/(4*level))<1e-8,'bar starts near zero for every rank');
     }
     for(let position=0;position<3;position++){
       get('restart').click();debug.dataset.boltLevel='3';debug.click();key('1');

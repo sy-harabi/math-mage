@@ -5,7 +5,7 @@
 const DISTRACTOR_WEIGHTS = Object.freeze({ formula: 0.5, signConstant: 0.2, arithmetic: 0.3 });
 export const SPELLS = Object.freeze({
   bolt: {
-    name: '번개', cooldownSeconds: 2, damageByJump: [20],
+    name: '번개', cooldownSeconds: 4, damageByJump: [20],
     chainTargets: 1, chainRange: 260,
     problem: {
       kind: 'monomialDerivative', coefficient: { min:-5,max:5 },
@@ -13,8 +13,8 @@ export const SPELLS = Object.freeze({
       answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
     },
     levels: {
-      2: { chainTargets: 3, damageByJump: [30, 30, 30], problem: { termCount: 2 } },
-      3: { chainTargets: 5, damageByJump: [40, 40, 40, 40, 40], problem: { termCount: 3 } },
+      2: { cooldownSeconds: 8, chainTargets: 3, damageByJump: [30, 30, 30], problem: { termCount: 2 } },
+      3: { cooldownSeconds: 12, chainTargets: 5, damageByJump: [40, 40, 40, 40, 40], problem: { termCount: 3 } },
     },
   },
   heal: {
@@ -39,8 +39,8 @@ export const SPELLS = Object.freeze({
       distractorWeights: DISTRACTOR_WEIGHTS,
     },
     levels: {
-      2: { power: 30, problem: { termCount: 2 } },
-      3: { power: 70, problem: { termCount: 3 } },
+      2: { cooldownSeconds: 8, power: 30, problem: { termCount: 2 } },
+      3: { cooldownSeconds: 12, power: 70, problem: { termCount: 3 } },
     },
   },
 });

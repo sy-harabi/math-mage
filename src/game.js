@@ -1,4 +1,4 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.1';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.3';
 import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
@@ -150,7 +150,7 @@ function displayMathQuestion(keepChoices=false) {
 }
 function endCast() {
   dom.mathHud.hidden=true;
-  if(spell)p.cd[spell]=SPELLS[spell].cooldownSeconds*cooldownMultiplier(p);
+  if(spell)p.cd[spell]=activeCastConfig.cooldownSeconds*cooldownMultiplier(p);
   mode='idle';spell=null;question=null;activeCastConfig=null;integralSequence=null;boltSequence=null;
   checkMilestones();
 }
@@ -570,7 +570,7 @@ function updateUI(){
   dom.slow.style.display=showWarp?'block':'none';
   dom.slow.textContent=showWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
   for(const k of ['bolt','heal','fireball']){
-    const ready=p.cd[k]<=0,cdTotal=SPELLS[k].cooldownSeconds*cooldownMultiplier(p);
+    const ready=p.cd[k]<=0,cdTotal=getSpellAtLevel(k,p.levels[k]).cooldownSeconds*cooldownMultiplier(p);
     const fill=100*clamp(1-p.cd[k]/cdTotal,0,1);
     dom[k].disabled=gameOver||mode!=='idle'||!ready;
     dom[k].classList.toggle('active',spell===k);dom[k].classList.toggle('ready',ready);
