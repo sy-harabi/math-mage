@@ -1,35 +1,48 @@
-import { SPELLS } from './spells.js';
+import { SPELLS, getSpellAtLevel } from './spells.js';
 import { generateQuestion } from './problem-engine.js';
+import { resolveChainTargets } from './combat.js';
 
 (()=>{'use strict';
 const C=document.getElementById('game'),ctx=C.getContext('2d');
 const W=C.width,H=C.height, WORLD_W=3000,WORLD_H=2200,TWO=Math.PI*2;
 const camera={x:0,y:0};
 function cameraUpdate(){camera.x=Math.max(0,Math.min(WORLD_W-W,p.x-W/2));camera.y=Math.max(0,Math.min(WORLD_H-H,p.y-H/2))} 
-const dom={kills:document.getElementById('kills'),bolt:document.getElementById('bolt'),heal:document.getElementById('heal'),boltFill:document.getElementById('bolt-fill'),healFill:document.getElementById('heal-fill'),boltState:document.getElementById('bolt-state'),healState:document.getElementById('heal-state'),cancel:document.getElementById('cancel'),restart:document.getElementById('restart'),toast:document.getElementById('toast'),slow:document.getElementById('slow'),status:document.getElementById('status')};
+const dom={kills:document.getElementById('kills'),bolt:document.getElementById('bolt'),heal:document.getElementById('heal'),boltFill:document.getElementById('bolt-fill'),healFill:document.getElementById('heal-fill'),boltState:document.getElementById('bolt-state'),healState:document.getElementById('heal-state'),cancel:document.getElementById('cancel'),restart:document.getElementById('restart'),boltUpgrade:document.getElementById('bolt-upgrade'),toast:document.getElementById('toast'),slow:document.getElementById('slow'),status:document.getElementById('status')};
 const spells=SPELLS;
 const FAIL_SLOW_SECONDS=1.5, FAIL_SPEED_MULT=.5;
 const pent=Array.from({length:5},(_,i)=>({x:Math.sin(i*2*Math.PI/5)*158,y:-Math.cos(i*2*Math.PI/5)*158}));
 let p,enemies,particles,bolts,kills,mode,spell,question,target,spawnTimer,last,toastUntil,gameOver;
 const keys=new Set();let touchTarget=null;
-const manualMoveKeys=new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
-const hasManualMoveKey=()=>[...manualMoveKeys].some(key=>keys.has(key));
 const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 function say(str,seconds=2){dom.toast.textContent=str;toastUntil=performance.now()+seconds*1000}
-function reset(){p={x:WORLD_W/2,y:WORLD_H/2,hp:100,inv:0,failSlow:0,cd:{bolt:0,heal:0},face:0};enemies=[];particles=[];bolts=[];kills=0;mode='idle';spell=null;question=null;target=null;spawnTimer=2;gameOver=false;touchTarget=null;cameraUpdate();for(let i=0;i<2;i++)spawn();say('1 번개 · 2 힐 · WASD 이동',4);updateUI()}
+function reset(){p={x:WORLD_W/2,y:WORLD_H/2,hp:100,inv:0,failSlow:0,cd:{bolt:0,heal:0},levels:{bolt:1,heal:1},face:0};enemies=[];particles=[];bolts=[];kills=0;mode='idle';spell=null;question=null;target=null;spawnTimer=2;gameOver=false;touchTarget=null;cameraUpdate();for(let i=0;i<2;i++)spawn();say('1 번개 · 2 힐 · WASD 이동',4);updateUI()}
 function spawn(){if(enemies.length>=3)return;let x,y;for(let t=0;t<20;t++){const angle=Math.random()*TWO,dist=rnd(330,490);x=Math.max(30,Math.min(WORLD_W-30,p.x+Math.cos(angle)*dist));y=Math.max(30,Math.min(WORLD_H-30,p.y+Math.sin(angle)*dist));if(Math.hypot(x-p.x,y-p.y)>260)break}enemies.push({x,y,hp:40,max:40,r:21,attack:0,speed:rnd(54,79),wiggle:Math.random()*6})}
-function begin(which){if(gameOver)return;if(mode!=='idle'){say('먼저 현재 마법을 완료하거나 취소하세요.');return}if(p.cd[which]>0){say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return}spell=which;question=generateQuestion(spells[which].problem);mode='question';say(which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2)}
+function begin(which){if(gameOver)return;if(mode!=='idle'){say('먼저 현재 마법을 완료하거나 취소하세요.');return}if(p.cd[which]>0){say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return}spell=which;question=generateQuestion(getSpellAtLevel(which,p.levels[which]).problem);mode='question';say(which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2)}
 function endCast(){if(spell)p.cd[spell]=spells[spell].cooldownSeconds;mode='idle';spell=null;question=null;target=null}
 function cancel(){if(mode==='idle')return;say('마법 취소');endCast()}
 function sparkle(x,y,color,count=16){for(let i=0;i<count;i++){let a=Math.random()*TWO,s=rnd(50,240);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:.35+Math.random()*.4,max:.75,color})}}
 function selectAnswer(i){if(mode!=='question')return;if(i!==question.correct){sparkle(p.x,p.y,'#ff6988',12);p.failSlow=FAIL_SLOW_SECONDS;say(`오답! 정답 ${question.answer} · 1.5초 이동 감속`,2.5);endCast();return}if(spell==='heal'){const gained=Math.min(spells.heal.power,100-p.hp);p.hp+=gained;sparkle(p.x,p.y,'#80f3ab',24);say(`정답! HP +${gained}`);endCast()}else{mode='target';say('정답! 번개를 맞힐 적을 클릭하세요.',3)}}
-function castEnemy(e){if(mode!=='target')return;let prev=e.hp;e.hp=Math.max(0,e.hp-spells.bolt.power);bolts.push({sx:p.x,sy:p.y,ex:e.x,ey:e.y,ttl:.23});sparkle(e.x,e.y,'#ffe17c',14);if(e.hp<=0){enemies=enemies.filter(v=>v!==e);kills++;say('번개 적중! 적 처치 +1')}else say(`번개 적중! 피해 ${prev-e.hp}`);endCast()}
+function castEnemy(e){
+  if(mode!=='target')return;
+  const bolt=getSpellAtLevel('bolt',p.levels.bolt);
+  const victims=resolveChainTargets(e,enemies,bolt.chainTargets,bolt.chainRange);
+  let from={x:p.x,y:p.y};
+  for(const victim of victims){
+    victim.hp=Math.max(0,victim.hp-bolt.power);
+    bolts.push({sx:from.x,sy:from.y,ex:victim.x,ey:victim.y,ttl:.23});
+    sparkle(victim.x,victim.y,'#ffe17c',14);from=victim;
+  }
+  for(const victim of victims){if(victim.hp<=0){enemies=enemies.filter(v=>v!==victim);kills++;}}
+  say(`번개 적중! ${victims.length}개체 공격 · ${victims.filter(v=>v.hp<=0).length}마리 처치`);
+  endCast();
+}
 function point(ev){let r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height}}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y}}
 function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:Math.max(210,Math.min(W-210,sx)),y:Math.max(195,Math.min(H-215,sy-35))}}
-C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<72 && Math.abs(t.y-m.y-pent[i].y)<34){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=hasManualMoveKey()?null:worldPoint(t)});
+C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<72 && Math.abs(t.y-m.y-pent[i].y)<34){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
 C.addEventListener('contextmenu',e=>e.preventDefault());
-window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(manualMoveKeys.has(k))touchTarget=null;if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
+dom.boltUpgrade.addEventListener('click',()=>{if(gameOver||mode!=='idle')return;p.levels.bolt=p.levels.bolt===1?2:1;say(`번개 Lv${p.levels.bolt} 적용`,2);updateUI()});
 for(const name of ['bolt','heal','cancel','restart'])dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel, restart:reset})[name]());
 const directions={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright'};
 for(let b of document.querySelectorAll('[data-dir]')){const k=directions[b.dataset.dir];b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(k);touchTarget=null});for(let n of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(n,()=>keys.delete(k))}
@@ -74,7 +87,11 @@ if(mode==='question'){
   ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();ctx.stroke();
   ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74):ctx.moveTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74));ctx.closePath();ctx.lineWidth=1;ctx.stroke();
   const lines=question.display ?? [question.prompt];
-  if(lines.length===2){
+  if(lines.length===3){
+    fittedLabel(lines[0],m.x,m.y-49,240,23);
+    fittedLabel(lines[1],m.x,m.y-19,260,26);
+    fittedLabel(lines[2],m.x,m.y+18,230,29);
+  }else if(lines.length===2){
     fittedLabel(lines[0],m.x,m.y-23,232,29);
     fittedLabel(lines[1],m.x,m.y+17,220,30);
   }else fittedLabel(lines[0],m.x,m.y-4,230,30);
@@ -83,13 +100,16 @@ if(mode==='question'){
   pts.forEach((v,i)=>{
     ctx.beginPath();ctx.ellipse(v.x,v.y,69,30,0,0,TWO);
     ctx.fillStyle='#234971';ctx.fill();ctx.strokeStyle='#b3d9ff';ctx.lineWidth=2.5;ctx.stroke();
-    fittedLabel(String(question.choices[i]),v.x,v.y,128,25);
+    const choiceLines=question.choiceLines?.[i] ?? [String(question.choices[i])];
+    if(choiceLines.length>1){
+      choiceLines.forEach((line,j)=>fittedLabel(line,v.x,v.y-10+j*20,125,20));
+    }else fittedLabel(choiceLines[0],v.x,v.y,128,25);
   });
   label('정답을 클릭하세요',m.x,m.y+208,15,'#d5e6ff');
 }
 if(mode==='target'){ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);label('번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');enemies.forEach(e=>circle(e.x-camera.x,e.y-camera.y,e.r+8,null,'#ffe388',3))}
 if(gameOver){ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);label('GAME OVER',W/2,H/2-25,48,'#fff');label(`적 ${kills}마리 처치 · 다시 시작을 누르세요`,W/2,H/2+35,20,'#c6d8ef')}
 }
-function updateUI(){dom.kills.textContent=kills;dom.slow.style.display=mode!=='idle'?'block':'none';for(const k of ['bolt','heal']){const ready=p.cd[k]<=0;const fill=100*Math.max(0,Math.min(1,1-p.cd[k]/spells[k].cooldownSeconds));dom[k].disabled=gameOver||mode!=='idle'||!ready;dom[k].classList.toggle('active',spell===k);dom[k].classList.toggle('ready',ready);dom[k+'Fill'].style.width=fill+'%';dom[k+'State'].textContent=ready?'준비 완료':p.cd[k].toFixed(1)+'초';dom[k].setAttribute('aria-label',`${k==='bolt'?'번개':'힐'} 마법, ${ready?'준비 완료':p.cd[k].toFixed(1)+'초 남음'}`)}dom.cancel.disabled=mode==='idle'||gameOver;dom.status.textContent=mode==='question'?'마법진: 정답 선택':mode==='target'?'적을 클릭해 발사':gameOver?'게임 오버':'적을 피해 마법을 사용하세요';if(performance.now()>toastUntil&&dom.toast.textContent!=='')dom.toast.textContent=''}
+function updateUI(){dom.boltUpgrade.disabled=gameOver||mode!=='idle';dom.boltUpgrade.textContent=p.levels.bolt===1?'번개 Lv2 체험':'번개 Lv1 복귀';dom.kills.textContent=kills;dom.slow.style.display=mode!=='idle'?'block':'none';for(const k of ['bolt','heal']){const ready=p.cd[k]<=0;const fill=100*Math.max(0,Math.min(1,1-p.cd[k]/spells[k].cooldownSeconds));dom[k].disabled=gameOver||mode!=='idle'||!ready;dom[k].classList.toggle('active',spell===k);dom[k].classList.toggle('ready',ready);dom[k+'Fill'].style.width=fill+'%';dom[k+'State'].textContent=`Lv${p.levels[k]} · `+(ready?'준비':p.cd[k].toFixed(1)+'초');dom[k].setAttribute('aria-label',`${k==='bolt'?'번개':'힐'} 마법, ${ready?'준비 완료':p.cd[k].toFixed(1)+'초 남음'}`)}dom.cancel.disabled=mode==='idle'||gameOver;dom.status.textContent=mode==='question'?'마법진: 정답 선택':mode==='target'?'적을 클릭해 발사':gameOver?'게임 오버':'적을 피해 마법을 사용하세요';if(performance.now()>toastUntil&&dom.toast.textContent!=='')dom.toast.textContent=''}
 function loop(ts){if(!last)last=ts;const dt=Math.min(.05,(ts-last)/1000);last=ts;step(dt);draw();updateUI();requestAnimationFrame(loop)}reset();requestAnimationFrame(loop);
 })();

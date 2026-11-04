@@ -1,4 +1,5 @@
-import { term, termKey, termText, derivativeOf, integralOf } from './monomial.js';
+import { term, termText, derivativeOf, integralOf } from './monomial.js';
+import { normalizePolynomial, polynomialKey, polynomialText, polynomialChoiceLines } from './polynomial.js';
 
 /**
  * 스킬·그래픽과 무관한 문제 생성 모듈.
@@ -86,119 +87,139 @@ function questionBank(spec, rng) {
 }
 
 /**
- * 단항식 미분·부정적분. 수식은 구조화된 분자·분모·차수로 비교하므로
- * 서로 다르게 보이는 동치식이나 중복 보기를 만들지 않는다.
+ * Every distractor is tagged formula / signConstant / arithmetic.
+ * The weights are per WRONG OPTION, not fixed counts per question.
+ * A fixed omitted-C option would force >=25% for four distractors,
+ * contradicting the requested 20% category weight, so omission is probabilistic.
  */
-function monomialQuestion(spec, rng, kind) {
-  const coefficient = integerRange(spec.coefficient, 'coefficient');
-  const exponent = integerRange(spec.exponent, 'exponent');
-  if (exponent.min < (kind === 'monomialDerivative' ? 1 : 0)) {
-    throw new Error('이 문제 유형에 허용되지 않는 차수입니다.');
-  }
-  const allowedCoefficients = [];
-  for (let a = coefficient.min; a <= coefficient.max; a++) {
-    if (a !== 0) allowedCoefficients.push(a);
-    if (allowedCoefficients.length > 2000) throw new Error('계수 범위가 너무 큽니다.');
-  }
-  if (!allowedCoefficients.length || exponent.max - exponent.min > 100) {
-    throw new Error('사용 가능한 계수·차수 범위가 필요합니다.');
-  }
-  const a = allowedCoefficients[pickIndex(allowedCoefficients.length, rng)];
-  const n = exponent.min + pickIndex(exponent.max - exponent.min + 1, rng);
-  const count = spec.answerCount ?? 5;
-  if (!Number.isInteger(count) || count < 2) throw new Error('answerCount는 2 이상이어야 합니다.');
+const DEFAULT_DISTRACTOR_WEIGHTS = Object.freeze({ formula: 0.5, signConstant: 0.2, arithmetic: 0.3 });
+const CATEGORIES = Object.keys(DEFAULT_DISTRACTOR_WEIGHTS);
 
-  const isDerivative = kind === 'monomialDerivative';
-  const correctTerm = isDerivative ? derivativeOf(a, n) : integralOf(a, n);
-  // 문제별 대표적인 실수를 이용한 오답 후보. 정답과 동치인 식은 제외한다.
-  const wrongTerms = isDerivative ? [
-    term(a, 1, n - 1),             // 계수에 차수를 곱하지 않음
-    term(a * n, 1, n),             // 지수를 줄이지 않음
-    term(a + n, 1, n - 1),         // 계수와 차수를 더함
-    term(a * n, 1, n + 1),         // 지수를 증가시킴
-    term(a * n, 1, n >= 2 ? n - 2 : 0),
-    term(a, 1, n),                 // 원래 단항식을 그대로 둠
-    term(a * (n + 1), 1, n - 1),
-    term(a * n + (a < 0 ? -1 : 1), 1, n - 1),
-    term(-a * n, 1, n - 1),        // 부호 반대
-    term(a * n, 1, n + 2),
-  ] : [
-    term(a, 1, n + 1),            // 계수를 나누지 않음
-    term(a * (n + 1), 1, n + 1),  // 계수를 곱함
-    term(a, n + 1, n),            // 지수를 증가시키지 않음
-    term(a, n + 1, n + 2),        // 지수를 2 증가시킴
-    term(a * n, 1, Math.max(0, n - 1)),  // 미분과 혼동
-    term(a, 1, n),                // 원래 단항식 그대로
-    term(a, Math.max(1, n), n + 1), // n+1 대신 n으로 나눔
-    term(-a, n + 1, n + 1),       // 부호 반대
-    term(a, n + 2, n + 1),        // n+2로 나눔
-    term(a, n + 3, n + 1),
-  ];
-  const seen = new Set([termKey(correctTerm)]);
-  const pool = wrongTerms.filter(candidate => {
-    const key = termKey(candidate);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  if (pool.length < count - 1) {
-    throw new Error('오답 후보가 부족합니다. 문제 범위를 조정하세요.');
+function weightedCategory(pools, weights, rng, excluded) {
+  const available = CATEGORIES.filter(k => pools[k].some(x => !excluded.has(x.key)) && weights[k] > 0);
+  if (!available.length) throw new Error('중복되지 않는 오답 보기가 부족합니다.');
+  const total = available.reduce((sum, k) => sum + weights[k], 0);
+  let point = rng() * total;
+  for (const k of available) {
+    point -= weights[k];
+    if (point < 0) return k;
   }
-  // 부정적분에서는 적분상수 누락을 명시적인 오답 유형으로 취급한다.
-  // 원시함수의 다항식 부분이 정답과 같더라도 + C가 없으면 정답이 아니다.
-  const omittedC = isDerivative ? 0 : (spec.omittedConstantDistractors ?? 1);
-  if (!Number.isInteger(omittedC) || omittedC < (isDerivative ? 0 : 1) || omittedC >= count) {
-    throw new Error('omittedConstantDistractors는 1 이상, 보기 개수 미만이어야 합니다.');
+  return available[available.length - 1];
+}
+
+function polynomialQuestion(spec, rng, kind) {
+  const derivative = kind === 'monomialDerivative';
+  const coefRange = integerRange(spec.coefficient, 'coefficient');
+  const powRange = integerRange(spec.exponent, 'exponent');
+  if (powRange.min < (derivative ? 1 : 0)) throw new Error('허용되지 않는 차수입니다.');
+  const coefficients = [];
+  for (let a = coefRange.min; a <= coefRange.max; a++) {
+    if (a !== 0) coefficients.push(a);
+    if (coefficients.length > 2000) throw new Error('계수 범위가 너무 큽니다.');
   }
-  const selected = [];
-  while (selected.length < count - 1 - omittedC) {
-    selected.push(...pool.splice(pickIndex(pool.length, rng), 1));
+  const termCount = spec.termCount ?? 1;
+  const powers = Array.from({length:powRange.max-powRange.min+1}, (_,i)=>powRange.min+i);
+  if (!coefficients.length || powers.length > 100 || !Number.isInteger(termCount) ||
+      termCount < 1 || termCount > powers.length || termCount > 3) {
+    throw new Error('계수·차수·항 개수 설정이 유효하지 않습니다.');
   }
-  const choicesWithMeaning = selected.map(value => ({ value, hasConstant: !isDerivative }));
-  if (!isDerivative) {
-    // 적어도 하나는 '정답 다항식, 단 + C 생략' — 개념적으로 분명한 오답.
-    choicesWithMeaning.push({ value: correctTerm, hasConstant: false });
-    for (let i = 1; i < omittedC; i++) {
-      choicesWithMeaning.push({ value: pool.splice(pickIndex(pool.length, rng), 1)[0], hasConstant: false });
+  const count = spec.answerCount ?? 5;
+  if (!Number.isInteger(count) || count < 2 || count > 10) throw new Error('answerCount는 2~10 사이여야 합니다.');
+  const weights = spec.distractorWeights ?? DEFAULT_DISTRACTOR_WEIGHTS;
+  if (!CATEGORIES.every(k => Number.isFinite(weights[k]) && weights[k] >= 0) ||
+      Math.abs(CATEGORIES.reduce((sum,k)=>sum+weights[k], 0)-1)>1e-8) {
+    throw new Error('오답 유형 가중치의 합계는 1이어야 합니다.');
+  }
+  const input = [];
+  for (let i=0;i<termCount;i++) {
+    const n=powers.splice(pickIndex(powers.length,rng),1)[0];
+    const a=coefficients[pickIndex(coefficients.length,rng)];
+    input.push({a,n});
+  }
+  input.sort((a,b)=>b.n-a.n);
+  const correctTerms = normalizePolynomial(input.map(({a,n}) => derivative ? derivativeOf(a,n) : integralOf(a,n)));
+  const withConstant = !derivative;
+  const keyOf = (terms, hasConstant) => `${polynomialKey(terms)}:${hasConstant}`;
+  const answerKey=keyOf(correctTerms,withConstant);
+  const pools=Object.fromEntries(CATEGORIES.map(k=>[k,[]]));
+  const poolSeen=Object.fromEntries(CATEGORIES.map(k=>[k,new Set()]));
+  const push = (category, terms, hasConstant = withConstant) => {
+    const cleaned=normalizePolynomial(terms);
+    if (!cleaned.length) return; // zero distractors provide no useful algebraic clue
+    const key=keyOf(cleaned,hasConstant);
+    if (key===answerKey || poolSeen[category].has(key)) return;
+    poolSeen[category].add(key);
+    pools[category].push({terms:cleaned,hasConstant,key,category});
+  };
+  const changeTerm = (index, replacement) => correctTerms.map((t,i)=>i===index?replacement:t);
+  for (let j=0;j<input.length;j++) {
+    const {a,n}=input[j];
+    const correct=derivative?derivativeOf(a,n):integralOf(a,n);
+    // Index j is stable because the original exponents were distinct and sorted.
+    const wrongFormula = derivative ? [
+      term(a,1,n-1),term(a*n,1,n),term(a+n,1,n-1),
+      term(a*n,1,n+1),term(a,1,n),term(a*(n+1),1,n-1),
+      term(a*n,1,Math.max(0,n-2)),term(a,1,n+1),
+    ] : [
+      term(a,1,n+1),term(a*(n+1),1,n+1),term(a,n+1,n),
+      term(a,n+1,n+2),term(a,1,n),term(a,Math.max(1,n),n+1),
+      term(a,n+2,n+1),term(a,n+3,n+1),
+    ];
+    for(const candidate of wrongFormula) push('formula',changeTerm(j,candidate));
+    // Small changes to the CORRECT answer: multiplication/division slips.
+    for(const delta of [-3,-2,-1,1,2,3]){
+      push('arithmetic',changeTerm(j,term(correct.num+delta,correct.den,correct.power)));
+    }
+    if (correct.den > 1) for(const delta of [-2,-1,1,2]){
+      const den=correct.den+delta;
+      if(den>0) push('arithmetic',changeTerm(j,term(correct.num,den,correct.power)));
+    }
+    // Sign errors can affect one term, particularly in a two-term derivative.
+    push('signConstant',changeTerm(j,term(-correct.num,correct.den,correct.power)));
+    for(const candidate of wrongFormula.slice(0,4)) {
+      push('signConstant',changeTerm(j,term(-candidate.num,candidate.den,candidate.power)));
     }
   }
-  // 적분상수를 빠뜨린 보기가 언제나 같은 꼭짓점에 놓이지 않도록 섞는다.
-  for (let i = choicesWithMeaning.length - 1; i > 0; i--) {
-    const j = pickIndex(i + 1, rng);
-    [choicesWithMeaning[i], choicesWithMeaning[j]] = [choicesWithMeaning[j], choicesWithMeaning[i]];
+  if (withConstant) {
+    push('signConstant',correctTerms,false); // correct polynomial, but no + C
+    // It can also be omitted from a numerically incorrect primitive.
+    for(const x of pools.formula.slice(0,3)) push('signConstant',x.terms,false);
+    for(const x of pools.arithmetic.slice(0,2)) push('signConstant',x.terms,false);
   }
-  const correct = pickIndex(count, rng);
-  choicesWithMeaning.splice(correct, 0, { value: correctTerm, hasConstant: !isDerivative });
-  const asText = option => termText(option.value) + (option.hasConstant ? ' + C' : '');
-  const prompt = isDerivative
-    ? `f(x) = ${termText(term(a, 1, n))}, f′(x) = ?`
-    : `∫ ${termText(term(a, 1, n))} dx = ?`;
-  const display = isDerivative
-    ? [`f(x) = ${termText(term(a, 1, n))}`, 'f′(x) = ?']
-    : [`∫ ${termText(term(a, 1, n))} dx`, '= ?'];
+  const selected=[], used=new Set([answerKey]);
+  for(let i=0;i<count-1;i++){
+    const category=weightedCategory(pools,weights,rng,used);
+    const options=pools[category].filter(item=>!used.has(item.key));
+    const picked=options[pickIndex(options.length,rng)];
+    selected.push(picked);used.add(picked.key);
+  }
+  const correct=pickIndex(count,rng);
+  const choicesWithMeaning=selected.slice();
+  choicesWithMeaning.splice(correct,0,{terms:correctTerms,hasConstant:withConstant,key:answerKey,category:'correct'});
+  const format=option=>polynomialText(option.terms)+(option.hasConstant?' + C':'');
+  const originalTerms=input.map(({a,n})=>term(a,1,n));
+  const expression=polynomialText(originalTerms);
+  const display=derivative
+    ? termCount===1 ? [`f(x) = ${expression}`,'f′(x) = ?'] : ['f(x) =',expression,'f′(x) = ?']
+    : [`∫ ${expression} dx`,'= ?'];
   return {
-    prompt,
-    display,
-    answer: asText(choicesWithMeaning[correct]),
-    choices: choicesWithMeaning.map(asText),
-    correct,
+    prompt: derivative?`f(x) = ${expression}, f′(x) = ?`:`∫ ${expression} dx = ?`,
+    display,answer:format(choicesWithMeaning[correct]),
+    choices:choicesWithMeaning.map(format),correct,
+    choiceLines:choicesWithMeaning.map(x=>polynomialChoiceLines(x.terms,x.hasConstant)),
     data: {
-      coefficient: a,
-      exponent: n,
-      answerTerm: correctTerm,
-      choiceTerms: choicesWithMeaning.map(option => option.value),
-      choiceHasConstant: choicesWithMeaning.map(option => option.hasConstant),
+      coefficient:input[0].a,exponent:input[0].n,inputTerms:originalTerms,
+      answerTerm:correctTerms[0],answerTerms:correctTerms,
+      choiceTerms:choicesWithMeaning.map(x=>x.terms[0]),
+      choiceTermPolys:choicesWithMeaning.map(x=>x.terms),
+      choiceHasConstant:choicesWithMeaning.map(x=>x.hasConstant),
+      distractorCategories:choicesWithMeaning.map(x=>x.category),
     },
   };
 }
 
-function monomialDerivative(spec, rng) {
-  return monomialQuestion(spec, rng, 'monomialDerivative');
-}
-
-function monomialIntegral(spec, rng) {
-  return monomialQuestion(spec, rng, 'monomialIntegral');
-}
+function monomialDerivative(spec,rng){return polynomialQuestion(spec,rng,'monomialDerivative');}
+function monomialIntegral(spec,rng){return polynomialQuestion(spec,rng,'monomialIntegral');}
 
 /** 새로운 문제 유형은 여기에 생성 함수를 등록하면 됩니다. */
 export const PROBLEM_GENERATORS = Object.freeze({ arithmetic, questionBank, monomialDerivative, monomialIntegral });

@@ -1,33 +1,39 @@
 /**
- * 마법별 문제 규칙을 바꾸려면 여기의 problem 항목을 수정하세요.
- * monomialDerivative: f(x)=ax^n의 도함수
- * monomialIntegral: ∫ax^n dx의 부정적분 (적분상수 C를 정답에 표기하고 일부 오답에서는 누락)
- * coefficient: 0을 제외한 정수 계수 범위 (음수와 양수 모두 출제)
- * exponent: 원래 함수의 차수 범위, 난이도는 현재 고정
- * 답안의 분수 계수는 기약분수로 정확하게 표현
+ * Skill levels independently control math difficulty and spell behavior.
+ * distractorWeights are per wrong option (formula/signConstant/arithmetic).
  */
+const DISTRACTOR_WEIGHTS = Object.freeze({ formula: 0.5, signConstant: 0.2, arithmetic: 0.3 });
 export const SPELLS = Object.freeze({
   bolt: {
-    name: '번개',
-    cooldownSeconds: 2,
-    power: 20,
+    name: '번개', cooldownSeconds: 2, power: 20,
+    chainTargets: 1, chainRange: 260,
     problem: {
-      kind: 'monomialDerivative',
-      coefficient: { min: -5, max: 5 },
-      exponent: { min: 2, max: 4 },
-      answerCount: 5,
+      kind: 'monomialDerivative', coefficient: { min:-5,max:5 },
+      exponent: { min:2,max:4 }, termCount:1,
+      answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
+    },
+    levels: {
+      2: { chainTargets: 2, problem: { termCount: 2 } },
     },
   },
   heal: {
-    name: '힐',
-    cooldownSeconds: 6,
-    power: 25,
+    name: '힐', cooldownSeconds: 6, power: 25,
     problem: {
-      kind: 'monomialIntegral',
-      omittedConstantDistractors: 1, // '+ C'를 빠뜨린 보기 개수 (정답 다항식 포함)
-      coefficient: { min: -5, max: 5 },
-      exponent: { min: 1, max: 3 },
-      answerCount: 5,
+      kind: 'monomialIntegral', coefficient: { min:-5,max:5 },
+      exponent: { min:1,max:3 }, termCount:1,
+      answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
     },
   },
 });
+
+/** Resolves just the requested spell level; does not mutate the shared config. */
+export function getSpellAtLevel(id, level = 1) {
+  const base = SPELLS[id];
+  if (!base) throw new Error(`Unknown spell ${id}`);
+  if (!Number.isInteger(level) || level < 1) throw new Error('Spell level must be positive.');
+  if (level === 1) return base;
+  const levelSettings=base.levels?.[level];
+  if (!levelSettings) throw new Error(`Spell ${id} level ${level} is not defined.`);
+  return { ...base, ...levelSettings,
+    problem: { ...base.problem, ...levelSettings.problem } };
+}
