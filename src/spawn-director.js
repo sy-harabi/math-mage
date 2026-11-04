@@ -1,17 +1,17 @@
 /** Unlimited periodic spawns. Weights are normalized per stage. */
 const EARLY_STAGES = Object.freeze({
-  1: { interval: 10, weights: { basic: 1 } },
-  2: { interval: 8, weights: { basic: .7, fast: .3 } },
-  3: { interval: 7, weights: { basic: .5, fast: .25, ranged: .25 } },
-  4: { interval: 6, weights: { basic: .4, fast: .35, ranged: .25 } },
-  5: { interval: 12, weights: { basic: .45, fast: .3, ranged: .25 } },
+  1: { interval: 6, weights: { basic: 1 } },
+  2: { interval: 5, weights: { basic: .7, fast: .3 } },
+  3: { interval: 4, weights: { basic: .5, fast: .25, ranged: .25 } },
+  4: { interval: 3, weights: { basic: .4, fast: .35, ranged: .25 } },
+  5: { interval: 2, weights: { basic: .45, fast: .3, ranged: .25 } },
 });
 
 export function stageSpawnConfig(stage) {
   if (!Number.isInteger(stage) || stage < 1) throw new Error('stage must be positive');
   if (EARLY_STAGES[stage]) return EARLY_STAGES[stage];
   return {
-    interval: stage % 5 === 0 ? 12 : Math.max(4.0, 6 - (stage - 5) * .25),
+    interval: 2, // Stages 6+ retain the 2-second floor; difficulty scales by enemy stats.
     weights: { basic: .35, fast: .35, ranged: .30 },
   };
 }

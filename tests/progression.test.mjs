@@ -4,7 +4,7 @@ import { createProgression, xpForLevel, addXp, xpToNext } from '../src/progressi
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from '../src/stage-director.js';
 import { ENEMY_TYPES, createEnemy } from '../src/enemy-types.js';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from '../src/spawn-director.js';
-import { selectUpgradeChoices, applyUpgrade, cooldownMultiplier, movementMultiplier } from '../src/upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, cooldownMultiplier, movementMultiplier, questionTimeMultiplier, availableUpgrades } from '../src/upgrades.js';
 import { SPELLS, getSpellAtLevel } from '../src/spells.js';
 import { generateQuestion } from '../src/problem-engine.js';
 
@@ -50,13 +50,13 @@ test('enemy types: HP, XP, speeds, attack, and stage scaling',()=>{
   assert.deepEqual(['basic','fast','ranged','boss'].map(t=>ENEMY_TYPES[t].hp),[40,25,30,260]);
   assert.deepEqual(['basic','fast','ranged','boss'].map(t=>ENEMY_TYPES[t].stageProgress),[6,7,8,30]);
   const e=createEnemy('fast',10,20,()=>.5,1);
-  assert.equal(e.hp,25);assert.equal(e.speed,135);assert.equal(e.damage,8);
+  assert.equal(e.hp,25);assert.equal(e.speed,185);assert.equal(e.damage,20);
   const e6=createEnemy('fast',10,20,()=>.5,6);
   assert.ok(e6.hp>e.hp);
 });
 
 test('spawn intervals and weighted monster selection',()=>{
-  assert.deepEqual([1,2,3,4,5].map(s=>stageSpawnConfig(s).interval),[10,8,7,6,12]);
+  assert.deepEqual([1,2,3,4,5].map(s=>stageSpawnConfig(s).interval),[6,5,4,3,2]);
   assert.equal(randomEnemyType(stageSpawnConfig(1),()=>.9),'basic');
   assert.equal(randomEnemyType(stageSpawnConfig(2),()=>.71),'fast');
   assert.equal(randomEnemyType(stageSpawnConfig(3),()=>.9),'ranged');
@@ -101,4 +101,35 @@ test('passive bonuses are cumulative and capped',()=>{
   for(let i=1;i<5;i++)applyUpgrade(p,'focus');
   assert.ok(Math.abs(cooldownMultiplier(p)-.65)<1e-12);
   assert.ok(!applyUpgrade(p,'focus'));
+});
+
+
+test('All enemy attacks are at least 20 and fast enemies remain faster than basic',()=>{
+  assert.ok(ENEMY_TYPES.fast.speed>ENEMY_TYPES.basic.speed);
+  for(const cfg of Object.values(ENEMY_TYPES))assert.ok(cfg.damage>=20);
+  assert.ok(ENEMY_TYPES.boss.dashDamage>=20);
+  assert.ok(ENEMY_TYPES.boss.slamDamage>=20);
+  assert.equal(ENEMY_TYPES.ranged.windup,1.1);
+  assert.equal(ENEMY_TYPES.ranged.laserWidth,34);
+});
+
+test('시간 왜곡: 매 강화마다 질문 중에만 15% 감속, 최대 4회',()=>{
+  const p=mockPlayer();
+  assert.equal(questionTimeMultiplier(p),1);
+  assert.ok(availableUpgrades(p).some(o=>o.id==='timeWarp'));
+  for(const speed of [.85,.7,.55,.4]){
+    assert.ok(applyUpgrade(p,'timeWarp'));
+    assert.ok(Math.abs(questionTimeMultiplier(p)-speed)<1e-9);
+  }
+  assert.ok(!applyUpgrade(p,'timeWarp'));
+  assert.equal(questionTimeMultiplier(p),.4);
+});
+
+test('5스테이지 이후에도 최대 동시 개체 수 제한을 스폰 설정에서 두지 않는다',()=>{
+  for(let stage=1;stage<=15;stage++){
+    const cfg=stageSpawnConfig(stage);
+    assert.ok(cfg.interval>=2);
+    assert.equal(cfg.maxEnemies,undefined);
+  }
+  assert.equal(stageSpawnConfig(15).interval,2);
 });

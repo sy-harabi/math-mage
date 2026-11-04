@@ -5,7 +5,8 @@ import { ENEMY_TYPES, createEnemy } from './enemy-types.js';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier } from './upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, questionTimeMultiplier } from './upgrades.js';
+import { createLaserSegment, laserHitsPoint } from './laser.js';
 
 (() => {
 'use strict';
@@ -31,7 +32,7 @@ const dom = {
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
-let p, enemies, particles, bolts, projectiles, kills, mode, spell, question, activeCastConfig;
+let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig;
 let stage, progression, spawnTimer, transitionTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
@@ -48,10 +49,10 @@ function say(message, seconds=2.5) {
 }
 function newPlayer() {
   return {x:WORLD_W/2,y:WORLD_H/2,hp:100,maxHp:100,inv:0,failSlow:0,
-    cd:{bolt:0,heal:0}, levels:{bolt:1,heal:1}, bonuses:{swiftness:0,vitality:0,focus:0},face:0};
+    cd:{bolt:0,heal:0}, levels:{bolt:1,heal:1}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
 function reset() {
-  p = newPlayer(); progression = createProgression(); enemies=[]; particles=[]; bolts=[];projectiles=[];
+  p = newPlayer(); progression = createProgression(); enemies=[]; particles=[]; bolts=[]; lasers=[];
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; touchTarget=null;
   currentChoices=[]; transitionTimer=0;gameOver=false; nextEnemyId=1;
   dom.upgradeOverlay.hidden=true;dom.transitionOverlay.hidden=true;
@@ -61,7 +62,7 @@ function reset() {
 function startStage(number) {
   stage = createStage(number);
   spawnTimer = stageSpawnConfig(stage.number).interval;
-  enemies=[]; projectiles=[];bolts=[];touchTarget=null;
+  enemies=[]; lasers=[];bolts=[];touchTarget=null;
   cameraUpdate();
   for(let i=0;i<2;i++) spawnEnemy(randomEnemyType(stageSpawnConfig(number)));
   dom.transitionOverlay.hidden=true;
@@ -181,9 +182,8 @@ function handleRanged(e,wd) {
   if(e.windup>0){
     e.windup-=wd;
     if(e.windup<=0){
-      const dx=e.aim.x-e.x,dy=e.aim.y-e.y,len=Math.hypot(dx,dy)||1;
-      projectiles.push({x:e.x,y:e.y,vx:dx/len*spec.projectileSpeed,
-        vy:dy/len*spec.projectileSpeed,damage:e.damage,ttl:5});
+      const segment=createLaserSegment(e,e.aim,spec.laserRange);
+      lasers.push({...segment,ttl:spec.laserDuration,width:spec.laserWidth,damage:e.damage,hit:false});
       e.aim=null;e.shootTimer=spec.attackInterval;
     }
     return;
@@ -197,23 +197,12 @@ function handleRanged(e,wd) {
     e.aim={x:p.x,y:p.y};e.windup=spec.windup;
   }
 }
-function summonBossMinions(e) {
-  const count=rnd(1,2);
-  for(let i=0;i<count;i++){
-    const angle=Math.random()*TWO,dist=75+rnd(0,45);
-    spawnEnemy('basic',clamp(e.x+Math.cos(angle)*dist,30,WORLD_W-30),
-      clamp(e.y+Math.sin(angle)*dist,30,WORLD_H-30));
-  }
-  say(`슬라임 군주가 부하 ${count}마리를 소환했습니다`,2);
-}
 function handleBoss(e,wd) {
   const spec=ENEMY_TYPES.boss;
-  e.summonTimer-=wd;
-  if(e.summonTimer<=0){summonBossMinions(e);e.summonTimer=12;}
   if(e.action==='windupSlam'){
     e.actionTimer-=wd;
     if(e.actionTimer<=0){
-      if(Math.hypot(p.x-e.aim.x,p.y-e.aim.y)<130+18)hurtPlayer(20,'보스 내려찍기');
+      if(Math.hypot(p.x-e.aim.x,p.y-e.aim.y)<130+18)hurtPlayer(spec.slamDamage,'보스 내려찍기');
       sparkle(e.aim.x,e.aim.y,'#ffa16b',36);
       e.action='chase';e.attack=e.hp<e.max/2?3.7:4.5;
     }
@@ -228,9 +217,9 @@ function handleBoss(e,wd) {
     return;
   }
   if(e.action==='dash'){
-    e.x=clamp(e.x+e.dashX*400*wd,30,WORLD_W-30);
-    e.y=clamp(e.y+e.dashY*400*wd,30,WORLD_H-30);
-    if(!e.dashHit&&distance(e,p)<e.r+21){hurtPlayer(16,'보스 돌진');e.dashHit=true;}
+    e.x=clamp(e.x+e.dashX*470*wd,30,WORLD_W-30);
+    e.y=clamp(e.y+e.dashY*470*wd,30,WORLD_H-30);
+    if(!e.dashHit&&distance(e,p)<e.r+21){hurtPlayer(spec.dashDamage,'보스 돌진');e.dashHit=true;}
     e.actionTimer-=wd;
     if(e.actionTimer<=0){e.action='chase';e.attack=e.hp<e.max/2?3.7:4.5;}
     return;
@@ -256,15 +245,14 @@ function moveEnemies(wd) {
     else handleMelee(e,wd);
   }
 }
-function moveProjectiles(wd) {
-  for(const shot of projectiles){
-    shot.x+=shot.vx*wd;shot.y+=shot.vy*wd;shot.ttl-=wd;
-    if(shot.ttl>0&&distance(shot,p)<27){
-      hurtPlayer(shot.damage,'원거리 투사체 피격');shot.ttl=0;
+function moveLasers(wd) {
+  for(const laser of lasers){
+    if(!laser.hit&&laserHitsPoint(laser,p,laser.width,18)){
+      hurtPlayer(laser.damage,'원거리 레이저 피격');laser.hit=true;
     }
-    if(shot.x<0||shot.y<0||shot.x>WORLD_W||shot.y>WORLD_H)shot.ttl=0;
+    laser.ttl-=wd;
   }
-  projectiles=projectiles.filter(shot=>shot.ttl>0);
+  lasers=lasers.filter(laser=>laser.ttl>0);
 }
 function moveHero(wd) {
   let dx=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
@@ -289,13 +277,12 @@ function tick(dt) {
     if(transitionTimer<=0){mode='idle';startStage(stage.number+1);checkMilestones();}
     return;
   }
-  const casting=mode==='question'||mode==='target';
-  const wd=dt*(casting?.75:1);
+  const wd=dt*(mode==='question'?questionTimeMultiplier(p):1);
   p.inv=Math.max(0,p.inv-wd);
   p.failSlow=Math.max(0,p.failSlow-dt);
   for(const key of ['bolt','heal'])p.cd[key]=Math.max(0,p.cd[key]-dt);
   moveHero(wd);cameraUpdate();
-  moveEnemies(wd);moveProjectiles(wd);
+  moveEnemies(wd);moveLasers(wd);
   if(gameOver)return;
   addStageTime(stage,wd);
   if(bossShouldSpawn(stage)){
@@ -404,9 +391,12 @@ function drawEnemy(e){
   ctx.fillStyle='#482733';ctx.fillRect(e.x-barW/2,y,barW,6);
   ctx.fillStyle=cfg.border;ctx.fillRect(e.x-barW/2,y,barW*e.hp/e.max,6);
   if(e.type==='ranged'&&e.windup>0&&e.aim){
-    ctx.setLineDash([7,5]);ctx.strokeStyle='#d3a2ff';ctx.lineWidth=3;
-    ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.aim.x,e.aim.y);ctx.stroke();ctx.setLineDash([]);
-    circle(e.aim.x,e.aim.y,19,null,'#d3a2ff',2);
+    const spec=ENEMY_TYPES.ranged;
+    const beam=createLaserSegment(e,e.aim,spec.laserRange);
+    ctx.save();ctx.strokeStyle='#ee73c9';ctx.globalAlpha=.22;ctx.lineWidth=spec.laserWidth;
+    ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);ctx.lineTo(beam.x2,beam.y2);ctx.stroke();
+    ctx.globalAlpha=1;ctx.setLineDash([8,5]);ctx.strokeStyle='#ffc6eb';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);ctx.lineTo(beam.x2,beam.y2);ctx.stroke();ctx.restore();
   }
   if(e.type==='boss'&&e.action==='windupSlam'&&e.aim){
     ctx.fillStyle='#ff695135';ctx.strokeStyle='#ff856a';ctx.lineWidth=3;
@@ -426,7 +416,12 @@ function draw(){
   ctx.save();ctx.translate(-camera.x,-camera.y);
   if(touchTarget)circle(touchTarget.x,touchTarget.y,9,null,'#729cbd',1);
   enemies.forEach(drawEnemy);
-  for(const shot of projectiles){circle(shot.x,shot.y,7,'#c8a8fc','#f3deff',2);}
+  for(const laser of lasers){
+    ctx.save();ctx.strokeStyle='#fb65ce';ctx.shadowColor='#ff96e4';ctx.shadowBlur=22;
+    ctx.lineWidth=laser.width;ctx.globalAlpha=.72;
+    ctx.beginPath();ctx.moveTo(laser.x1,laser.y1);ctx.lineTo(laser.x2,laser.y2);ctx.stroke();
+    ctx.globalAlpha=1;ctx.strokeStyle='#fff0fa';ctx.lineWidth=7;ctx.stroke();ctx.restore();
+  }
   ctx.save();ctx.translate(p.x,p.y);
   if(p.inv>0&&Math.floor(performance.now()/90)%2===0)ctx.globalAlpha=.45;
   circle(0,0,22,'#4b92e3','#b4d9ff',3);ctx.rotate(p.face);
@@ -499,7 +494,9 @@ function updateUI(){
   dom.characterLevel.textContent=progression.level;
   dom.xpLabel.textContent=`${xp.current}/${xp.required}`;
   dom.xpFill.style.width=Math.min(100,xp.current/xp.required*100)+'%';
-  dom.slow.style.display=(mode==='question'||mode==='target')?'block':'none';
+  const qSpeed=questionTimeMultiplier(p);
+  dom.slow.style.display=mode==='question'&&qSpeed<1?'block':'none';
+  dom.slow.textContent=`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`;
   for(const k of ['bolt','heal']){
     const ready=p.cd[k]<=0,cdTotal=SPELLS[k].cooldownSeconds*cooldownMultiplier(p);
     const fill=100*clamp(1-p.cd[k]/cdTotal,0,1);

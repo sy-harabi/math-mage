@@ -5,10 +5,10 @@
 <title>계산 마법사 — 프로토타입</title>
 <link rel="stylesheet" href="./src/styles.css">
 </head><body><div id="wrap">
-<header><div><h1>계산 마법사</h1><small>수학으로 주문을 완성하는 2D 액션 RPG · v1.0</small></div><div class="stats"><span>스테이지 <b id="stage-number">1</b></span><span>레벨 <b id="character-level">1</b></span><span>XP <b id="xp-label">0/24</b></span><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span></div></header>
+<header><div><h1>계산 마법사</h1><small>수학으로 주문을 완성하는 2D 액션 RPG · v1.1</small></div><div class="stats"><span>스테이지 <b id="stage-number">1</b></span><span>레벨 <b id="character-level">1</b></span><span>XP <b id="xp-label">0/24</b></span><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span></div></header>
 <div id="stage-meter" aria-label="스테이지 진행도"><div id="stage-progress-fill"></div><span id="stage-progress-text">스테이지 1 · 0%</span></div>
 <div id="xp-meter" aria-label="다음 레벨 진행도"><div id="xp-progress-fill"></div></div>
-<div id="stage"><canvas id="game" width="960" height="600" aria-label="계산 마법사 게임"></canvas><div id="toast" role="status">1 번개 · 2 힐 · WASD 이동</div><div id="slow">슬로모션 ×0.75</div>
+<div id="stage"><canvas id="game" width="960" height="600" aria-label="계산 마법사 게임"></canvas><div id="toast" role="status">1 번개 · 2 힐 · WASD 이동</div><div id="slow">풀이 중 세계 속도 ×0.85</div>
 <div id="upgrade-overlay" class="game-overlay" hidden>
   <div class="overlay-panel"><h2 id="upgrade-heading">레벨업</h2><p>업그레이드 하나를 선택하세요. 전투가 정지됩니다.</p><div id="upgrade-options" class="upgrade-options"></div></div>
 </div>
@@ -18,9 +18,9 @@
 <button id="bolt" class="skill-button bolt-skill" aria-label="번개 마법"><span class="skill-heading"><span>⚡ 1 · 번개</span><span class="skill-state" id="bolt-state">준비</span></span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="bolt-fill"></span></span></button>
 <button id="heal" class="skill-button heal-skill" aria-label="회복 마법"><span class="skill-heading"><span>✚ 2 · 힐</span><span class="skill-state" id="heal-state">준비</span></span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="heal-fill"></span></span></button>
 <button id="cancel">Esc · 취소</button><button id="restart">다시 시작</button><span id="status"></span></div>
-<div id="level-picker" class="debug-level-picker" role="group" hidden aria-label="번개 스킬 레벨 체험"><strong>번개 레벨 체험</strong><button type="button" data-bolt-level="1" aria-pressed="true">Lv1 · 20</button><button type="button" data-bolt-level="2" aria-pressed="false">Lv2 · 30/15</button><button type="button" data-bolt-level="3" aria-pressed="false">Lv3 · 35/25/15</button></div>
-<div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +10</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +25</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +50</button></div>
+<div id="level-picker" class="debug-level-picker" role="group" hidden aria-label="번개 스킬 레벨 체험"><strong>번개 레벨 체험</strong><button type="button" data-bolt-level="1" aria-pressed="true">Lv1 · 20</button><button type="button" data-bolt-level="2" aria-pressed="false">Lv2 · 30/20</button><button type="button" data-bolt-level="3" aria-pressed="false">Lv3 · 40/30/20</button></div>
+<div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 <div id="touchpad" aria-label="태블릿 이동 버튼"><button class="sp">.</button><button data-dir="up">▲</button><button class="sp">.</button><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div>
-<p id="help"><span class="pc">WASD/방향키 이동 또는 마우스 클릭 이동 · </span>번개(1): 도함수 정답 선택 → 적 클릭 · 힐(2): 부정적분 정답 선택 → 회복. 몬스터를 처치해 XP를 얻고 레벨업하면 스킬 강화·기동력·생명력·집중 중 하나를 선택합니다. 스테이지 진행도는 시간과 처치로 오르며 5스테이지마다 보스가 등장합니다. 적 수 제한은 없습니다. 오답은 1.5초 이동 감속, 시전 중 세계는 75% 속도입니다. <span class="pc">테스트용 레벨 선택은 주소 뒤에 ?debug=1을 붙이면 표시됩니다.</span></p>
+<p id="help"><span class="pc">WASD/방향키 이동 또는 마우스 클릭 이동 · </span>번개(1): 도함수 정답 선택 → 적 클릭 · 힐(2): 부정적분 정답 선택 → 회복. 몬스터를 처치해 XP를 얻고 레벨업하면 스킬 강화·기동력·생명력·집중·시간 왜곡 중 하나를 선택합니다. 스테이지 진행도는 시간과 처치로 오르며 5스테이지마다 보스가 등장합니다. 적 수 제한은 없습니다. 오답은 1.5초 이동 감속. 문제 풀이 중 세계 속도는 기본 100%이며 시간 왜곡 강화마다 15%씩 감소합니다(타게팅 중 100%). <span class="pc">테스트용 레벨 선택은 주소 뒤에 ?debug=1을 붙이면 표시됩니다.</span></p>
 </div>
 <script type="module" src="./src/game.js"></script></body></html>

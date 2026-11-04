@@ -13,20 +13,20 @@ export const SPELLS = Object.freeze({
       answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
     },
     levels: {
-      2: { chainTargets: 2, damageByJump: [30, 15], problem: { termCount: 2 } },
-      3: { chainTargets: 3, damageByJump: [35, 25, 15], problem: { termCount: 3 } },
+      2: { chainTargets: 2, damageByJump: [30, 20], problem: { termCount: 2 } },
+      3: { chainTargets: 3, damageByJump: [40, 30, 20], problem: { termCount: 3 } },
     },
   },
   heal: {
-    name: '힐', cooldownSeconds: 6, power: 10,
+    name: '힐', cooldownSeconds: 6, power: 20,
     problem: {
       kind: 'monomialIntegral', coefficient: { min:-5,max:5 },
       exponent: { min:1,max:3 }, termCount:1,
       answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
     },
     levels: {
-      2: { power: 25, problem: { termCount: 2 } },
-      3: { power: 50, problem: { termCount: 3 } },
+      2: { power: 50, problem: { termCount: 2 } },
+      3: { power: 80, problem: { termCount: 3 } },
     },
   },
 });

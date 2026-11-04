@@ -5,6 +5,7 @@ const UPGRADES = Object.freeze({
   swiftness: { id: 'swiftness', title: '기동력', description: '이동속도 +8%' },
   vitality: { id: 'vitality', title: '생명력', description: '최대 HP +15 · HP 15 회복' },
   focus: { id: 'focus', title: '집중', description: '모든 마법 쿨타임 7% 감소' },
+  timeWarp: { id: 'timeWarp', title: '시간 왜곡', description: '문제 풀이 중 세계 속도 −15% (최대 4회)' },
 });
 
 export function availableUpgrades(player) {
@@ -14,6 +15,7 @@ export function availableUpgrades(player) {
   if ((player.bonuses.swiftness ?? 0) < 6) options.push(UPGRADES.swiftness);
   if ((player.bonuses.vitality ?? 0) < 6) options.push(UPGRADES.vitality);
   if ((player.bonuses.focus ?? 0) < 5) options.push(UPGRADES.focus);
+  if ((player.bonuses.timeWarp ?? 0) < 4) options.push(UPGRADES.timeWarp);
   return options;
 }
 
@@ -42,11 +44,17 @@ export function applyUpgrade(player, id) {
     player.maxHp += 15;
     player.hp = Math.min(player.maxHp, player.hp + 15);
   } else if (id === 'focus') player.bonuses.focus += 1;
+  else if (id === 'timeWarp') player.bonuses.timeWarp = (player.bonuses.timeWarp ?? 0) + 1;
   return true;
 }
 
 export function movementMultiplier(player) {
   return 1 + player.bonuses.swiftness * .08;
+}
+
+/** World speed is reduced ONLY while choosing an answer, never while targeting. */
+export function questionTimeMultiplier(player) {
+  return Math.max(.4, 1 - .15 * (player.bonuses.timeWarp ?? 0));
 }
 
 export function cooldownMultiplier(player) {
