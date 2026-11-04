@@ -6,7 +6,7 @@ import {term} from '../src/monomial.js';
 import {getSpellAtLevel} from '../src/spells.js';
 import {generateQuestion} from '../src/problem-engine.js';
 
-test('speedrun uses real seconds, pauses for upgrade and remains frozen at victory',()=>{
+test('speedrun uses real seconds, pauses when inactive and remains frozen at victory',()=>{
   const timer=createRunTimer();
   advanceRunTimer(timer, 20.15);advanceRunTimer(timer, 4.4, false);
   advanceRunTimer(timer, 40.08);

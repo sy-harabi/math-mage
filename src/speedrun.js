@@ -1,4 +1,4 @@
-/** Active wall-clock time. Upgrade menus and hidden tabs are paused. */
+/** Real time, including upgrade selection and spell slowdown. Hidden tabs are paused. */
 export function createRunTimer() {
   return {elapsedSeconds: 0, finished: false};
 }

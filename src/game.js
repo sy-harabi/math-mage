@@ -598,7 +598,7 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='upgrade'&&mode!=='victory');
+    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='victory');
     tick(Math.min(.05,rawDt));updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
