@@ -1,6 +1,6 @@
 import { createLaserSegment } from './laser.js';
 import { ENEMY_TYPES } from './enemy-types.js?v=1.9.0';
-import { PLAYER_HIT_RADIUS } from './rock-slime.js?v=1.9.0';
+import { PLAYER_HIT_RADIUS } from './rock-slime.js?v=1.10.1';
 
 // Presentation only: world positions, collision radii and attack timing stay in game.js.
 export const NEON = Object.freeze({

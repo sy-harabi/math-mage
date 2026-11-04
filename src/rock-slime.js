@@ -3,8 +3,27 @@ import { ENEMY_TYPES } from './enemy-types.js?v=1.9.0';
 const clamp = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
 export const PLAYER_HIT_RADIUS = 18;
 
+/** Pick a landing point around the player's current location, without movement prediction. */
+export function chooseRockLanding(enemy, player, world, rng = Math.random) {
+  const spec = ENEMY_TYPES.rock;
+  const outer = rng() >= .7;
+  const minRadius = outer ? 40 : 0;
+  const maxRadius = outer ? 90 : 40;
+  const radius = Math.sqrt(minRadius ** 2 + rng() * (maxRadius ** 2 - minRadius ** 2));
+  const angle = rng() * Math.PI * 2;
+  const targetX = clamp(player.x + Math.cos(angle) * radius, enemy.r, world.w - enemy.r);
+  const targetY = clamp(player.y + Math.sin(angle) * radius, enemy.r, world.h - enemy.r);
+  const dx = targetX - enemy.x, dy = targetY - enemy.y;
+  const distance = Math.hypot(dx, dy);
+  const scale = distance > spec.jumpMaxDistance ? spec.jumpMaxDistance / distance : 1;
+  return {
+    x: clamp(enemy.x + dx * scale, enemy.r, world.w - enemy.r),
+    y: clamp(enemy.y + dy * scale, enemy.r, world.h - enemy.r),
+  };
+}
+
 /** Advance in game-time. Only landing/melee events may damage the player. */
-export function updateRockSlime(enemy, player, seconds, world) {
+export function updateRockSlime(enemy, player, seconds, world, rng = Math.random) {
   const spec = ENEMY_TYPES.rock;
   enemy.jumpCooldown = Math.max(0, enemy.jumpCooldown - seconds);
   if (enemy.action === 'windupJump') {
@@ -40,11 +59,7 @@ export function updateRockSlime(enemy, player, seconds, world) {
   }
   const dx = player.x - enemy.x, dy = player.y - enemy.y, distance = Math.hypot(dx, dy);
   if (enemy.jumpCooldown <= 1e-9 && distance >= spec.jumpMinRange && distance <= spec.jumpTriggerRange) {
-    const length = Math.min(distance, spec.jumpMaxDistance);
-    enemy.aim = {
-      x: clamp(enemy.x + dx / distance * length, enemy.r, world.w - enemy.r),
-      y: clamp(enemy.y + dy / distance * length, enemy.r, world.h - enemy.r),
-    };
+    enemy.aim = chooseRockLanding(enemy, player, world, rng);
     enemy.action = 'windupJump'; enemy.actionTimer = spec.jumpWindup;
   } else if (distance > enemy.r + 16) {
     const length = Math.min(enemy.speed * seconds, distance - enemy.r - 16);

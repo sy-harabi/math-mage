@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEnemy, ENEMY_TYPES } from '../src/enemy-types.js';
-import { updateRockSlime, PLAYER_HIT_RADIUS } from '../src/rock-slime.js';
+import { updateRockSlime, chooseRockLanding, PLAYER_HIT_RADIUS } from '../src/rock-slime.js';
 import { stageSpawnConfig, randomEnemyType } from '../src/spawn-director.js';
 import { separateEnemies } from '../src/enemy-collision.js';
 import { pickEnemyAt } from '../src/targeting.js';
 
 const world={w:3000,h:2200};
 const rock=(stage=5)=>createEnemy('rock',500,500,()=>.5,stage);
-const step=(e,p,dt=.05)=>updateRockSlime(e,p,dt,world);
+const step=(e,p,dt=.05)=>updateRockSlime(e,p,dt,world,()=>.5);
 function prepare(e,p){e.jumpCooldown=0;assert.equal(step(e,p),null);assert.equal(e.action,'windupJump');}
 function launch(e,p){for(let i=0;i<14;i++)step(e,p);assert.equal(e.action,'jump');}
 function land(e,p){let event;for(let i=0;i<30&&e.action==='jump';i++)event=step(e,p);assert.equal(event.type,'landing');return event;}
@@ -31,6 +31,22 @@ test('rock stats retain tier scaling and boss walks at 160 without changing its 
   assert.equal(ENEMY_TYPES.boss.dashSpeed,900);
 });
 
+test('landing is randomized around the current player, never predicted, and respects jump limits',()=>{
+  const e=rock(),p={x:800,y:500};
+  const rolls=(...values)=>{let i=0;return ()=>values[i++];};
+  assert.deepEqual(chooseRockLanding(e,p,world,rolls(0,0,0)),{x:800,y:500});
+  assert.deepEqual(chooseRockLanding(e,p,world,rolls(.7,0,0)),{x:840,y:500});
+  assert.deepEqual(chooseRockLanding(e,p,world,rolls(.9,1,0)),{x:890,y:500});
+  const far=chooseRockLanding(e,{x:1000,y:500},world,rolls(0,0,0));
+  assert.deepEqual(far,{x:920,y:500});
+  const edge=chooseRockLanding(e,{x:0,y:300},world,rolls(0,0,0));
+  assert.equal(edge.x,e.r);
+  prepare(e,p);
+  assert.ok(Math.abs(e.aim.x-(800-Math.sqrt(.5)*40))<1e-9);
+  const aim={...e.aim};p.x=1300;p.y=900;
+  launch(e,p);assert.deepEqual(e.aim,aim);
+});
+
 test('warning locks the capped landing point; flight travels at 700 and hits only once on landing',()=>{
   const e=rock(),p={x:1000,y:500};prepare(e,p);
   assert.deepEqual(e.aim,{x:920,y:500});
@@ -47,7 +63,8 @@ test('warning locks the capped landing point; flight travels at 700 and hits onl
 test('landing damage matches the warning boundary including player radius',()=>{
   for(const [offset,hit] of [[0,true],[65+PLAYER_HIT_RADIUS,true],[65+PLAYER_HIT_RADIUS+.01,false]]){
     const e=rock(7),p={x:800,y:500};prepare(e,p);launch(e,p);
-    p.x+=offset;
+    p.x=e.aim.x+offset;
+    p.y=e.aim.y;
     const event=land(e,p);assert.equal(event.hit,hit);assert.equal(event.damage,26);
   }
 });
