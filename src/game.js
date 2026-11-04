@@ -1,4 +1,4 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.3';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.5.4';
 import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
