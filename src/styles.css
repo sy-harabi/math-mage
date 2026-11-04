@@ -190,3 +190,6 @@
 #shield-level-picker strong{font-size:13px;color:#b4f5ff;margin-right:4px}
 #shield-level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4c8493;background:#183744}
 #shield-level-picker button.selected{background:#2e626f;border-color:#b4f5ff}
+/* Four skill buttons leave the status text its own readable row. */
+#buttons #status{flex-basis:100%}
+#buttons #status:empty{display:none}

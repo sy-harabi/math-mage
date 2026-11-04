@@ -1,4 +1,4 @@
-# 계산 마법사 (Math Mage) — v1.6.0 (PC 전용)
+# 계산 마법사 (Math Mage) — v1.6.1 (PC 전용)
 
 [게임 플레이](https://sy-harabi.github.io/math-mage/) · [소스코드](https://github.com/sy-harabi/math-mage)
 
