@@ -122,8 +122,6 @@ export function drawLaserWarning(ctx,e,spec){
     ctx.beginPath();ctx.moveTo(beam.x1+side*ox,beam.y1+side*oy);
     ctx.lineTo(beam.x2+side*ox,beam.y2+side*oy);ctx.stroke();
   }
-  ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);
-  ctx.lineTo(beam.x2,beam.y2);ctx.stroke();
   ctx.restore();
 }
 

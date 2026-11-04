@@ -16,7 +16,7 @@ import { pickEnemyAt } from './targeting.js';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
 import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 import { grantShield, applyPlayerHit } from './shield.js';
-import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=enemy-balance-2';
+import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=laser-warning-rails-1';
 
 (() => {
 'use strict';
