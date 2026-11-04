@@ -95,58 +95,78 @@ test('PC ritual is a transparent five-point pentagram, not an exercise-card list
   assert.match(css,/\.math-choice:nth-child\(5\)/);
 });
 
-// Exercise the real game event handlers, not just the sequence helper.
-test('fireball Lv3 swaps only the central question, permits movement, launches and fails without undo',async()=>{
-  const {conceptVariants,CONCEPT_TOKENS}=await import('../src/concept-questions.js');
-  const variants=conceptVariants();
+test('fireball assembles every rank with fixed runes, previews radius and explodes on click before a frame',async()=>{
+  const {generateDefiniteIntegralSequence}=await import('../src/definite-integral.js');
+  const {getSpellAtLevel}=await import('../src/spells.js');
   const elements=new Map();
-  const get=id=>{
-    if(!ids.has(id))return null;
-    if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);
-  };
+  const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
   const debug=makeElement('debug');debug.dataset.fireballLevel='3';
   const canvas=get('game');canvas.width=960;canvas.height=600;
-  canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
+  const arcs=[],translations=[];
+  canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12}),arc:(...args)=>arcs.push(args),translate:(...args)=>translations.push(args)},{get:(o,k)=>o[k]??(()=>{})});
   const listeners=new Map();let frame;
   globalThis.window={location:{search:'?debug=1'},addEventListener:(k,f)=>listeners.set(k,f)};
   globalThis.document={getElementById:get,createElement:makeElement,
     querySelectorAll:selector=>selector==='[data-fireball-level]'?[debug]:[],addEventListener:()=>{},hidden:false};
   globalThis.requestAnimationFrame=fn=>{frame=fn;};
-  await import('../src/game.js?fireball-events');
   const key=key=>listeners.get('keydown')({key,repeat:false,preventDefault(){}});
-  debug.click();key('3');
-  const nodes=[...get('math-answers').children];
-  const formulas=nodes.map(n=>n.children[1].innerHTML);
-  const left=get('rune-frame').style.left;
-  key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
-  assert.equal(get('rune-frame').style.left,left,'camera must remain centered while moving');
-  for(let i=0;i<3;i++){
-    assert.match(get('math-title').textContent,new RegExp(`${i+1}/3`));
-    const current=get('math-problem').innerHTML;
-    const variant=variants.find(q=>q.html===current);
-    assert.ok(variant,'rendered question is from the reviewed bank');
-    const correct=formulas.indexOf(CONCEPT_TOKENS[variant.answerId].html);
-    assert.ok(correct>=0);
-    nodes[correct].click();
-    assert.deepEqual(get('math-answers').children,nodes,'answer DOM nodes remain intact');
-    assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
-    if(i<2){assert.equal(get('math-cast-hud').hidden,false);assert.notEqual(get('math-problem').innerHTML,current);}
-  }
-  assert.equal(get('math-cast-hud').hidden,true);
-  assert.match(get('toast').textContent,/폭발시킬 위치/);
-  canvas._listeners.get('pointerdown')({clientX:480,clientY:300,preventDefault(){}});
-  assert.match(get('toast').textContent,/파이어볼 발사/);
-  frame(101);assert.match(get('toast').textContent,/파이어볼 .*타격/);
-  assert.match(get('fireball-state').textContent,/초/);
-  // Restart clears cooldown/projectiles. A wrong answer cannot be undone or retried.
-  get('restart').click();debug.click();get('fireball').click();
-  const variant=variants.find(q=>q.html===get('math-problem').innerHTML);
-  const correct=get('math-answers').children.findIndex(n=>n.children[1].innerHTML===CONCEPT_TOKENS[variant.answerId].html);
-  get('math-answers').children[(correct+1)%5].click();
-  assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
-  key('Backspace');get('math-answers').children[correct].click();
-  assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
-  key('3');assert.match(get('toast').textContent,/쿨타임/);
+  const random=Math.random;Math.random=()=>.25;
+  try{
+    await import('../src/game.js?definite-integral-events');
+    for(let level=1;level<=3;level++){
+      get('restart').click();debug.dataset.fireballLevel=String(level);debug.click();key('3');
+      const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',level).problem,()=>.25);
+      const nodes=[...get('math-answers').children];
+      const formulas=nodes.map(n=>n.children[1].innerHTML);
+      const left=get('rune-frame').style.left;
+      key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
+      assert.equal(get('rune-frame').style.left,left);
+      for(let i=0;i<level;i++){
+        assert.equal(get('math-title').textContent,'');
+        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuenow="${i}"`));
+        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level}"`));
+        assert.match(get('math-problem').innerHTML,/<msubsup>/);
+        assert.doesNotMatch(get('math-problem').innerHTML,/□|왼쪽|실패/);
+        nodes[expected.correctIndices[i]].click();
+        assert.deepEqual(get('math-answers').children,nodes);
+        assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
+        assert.equal(get('math-cast-hud').hidden,i===level-1);
+      }
+      assert.match(get('toast').textContent,/폭발시킬 위치/);
+      canvas._listeners.get('pointermove')({clientX:650,clientY:350});
+      arcs.length=0;frame(101);
+      const preview=arcs.find(a=>a[2]===42);assert.ok(preview,'target radius is drawn');
+      canvas._listeners.get('pointerdown')({clientX:650,clientY:350,preventDefault(){}});
+      // No animation frame or travel time is needed to resolve the explosion.
+      assert.match(get('toast').textContent,/파이어볼 .*타격/);
+      assert.doesNotMatch(get('toast').textContent,/발사/);
+      arcs.length=0;frame(151);
+      assert.ok(arcs.some(a=>a[0]===preview[0]&&a[1]===preview[1]&&a[2]===42),'blast uses the exact preview center/radius');
+      assert.match(get('fireball-state').textContent,/초/);
+    }
+    // Bring the two initial slimes into view, then verify real damage/XP resolve in the click handler.
+    get('restart').click();debug.dataset.fireballLevel='3';debug.click();key('3');key('d');
+    for(let t=201;t<=651;t+=50){translations.length=0;frame(t);}
+    listeners.get('keyup')({key:'d'});
+    const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
+    for(const index of expected.correctIndices)get('math-answers').children[index].click();
+    const target={clientX:translations[1][0]+translations[0][0],clientY:translations[1][1]+translations[0][1],preventDefault(){}};
+    assert.ok(target.clientX>=0&&target.clientX<=960&&target.clientY>=0&&target.clientY<=600);
+    canvas._listeners.get('pointerdown')(target);
+    assert.match(get('toast').textContent,/2개체 타격 · 2마리 처치/,'both enemies take damage immediately, before a frame');
+    frame(701);assert.equal(get('kills').textContent,2);assert.equal(get('xp-label').textContent,'12/24');
+    for(let position=0;position<3;position++){
+      get('restart').click();debug.dataset.fireballLevel='3';debug.click();get('fireball').click();
+      const expected=generateDefiniteIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
+      const nodes=get('math-answers').children;
+      for(let i=0;i<position;i++)nodes[expected.correctIndices[i]].click();
+      nodes[(expected.correctIndices[position]+1)%5].click();
+      assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
+      key('Backspace');nodes[expected.correctIndices[position]].click();
+      assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
+      key('3');assert.match(get('toast').textContent,/쿨타임/);
+    }
+  }finally{Math.random=random;}
 });
 
 test('bolt event flow keeps five runes, assembles every rank, and fails immediately at any step',async()=>{

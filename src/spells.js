@@ -33,10 +33,14 @@ export const SPELLS = Object.freeze({
     name: '파이어볼', cooldownSeconds: 4, power: 10,
     // One basic slime's diameter (42 world pixels) as the explosion radius.
     radius: 42,
-    problem: { kind: 'concept', questionCount: 1, answerCount: 5 },
+    problem: {
+      kind: 'definiteIntegral', termCount: 1, answerCount: 5,
+      coefficient: { min: -6, max: 6 }, exponent: { min: 0, max: 2 },
+      intervals: [[0,1],[0,2],[-1,1]], integerResults: true,
+    },
     levels: {
-      2: { power: 30, problem: { questionCount: 2 } },
-      3: { power: 70, problem: { questionCount: 3 } },
+      2: { power: 30, problem: { termCount: 2 } },
+      3: { power: 70, problem: { termCount: 3 } },
     },
   },
 });

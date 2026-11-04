@@ -2,7 +2,7 @@
 const UPGRADES = Object.freeze({
   bolt: { id: 'bolt', title: '번개 강화', description: '미분 항 +1 · 연쇄 대상 +2 · 피해 +10' },
   heal: { id: 'heal', title: '힐 강화', description: '적분 항 +1 · 회복량 증가' },
-  fireball: { id: 'fireball', title: '파이어볼 강화', description: '개념 질문 +1 · 피해 10 → 30 → 70 · 범위 고정' },
+  fireball: { id: 'fireball', title: '파이어볼 강화', description: '정적분 항 +1 · 피해 10 → 30 → 70 · 범위 고정' },
   swiftness: { id: 'swiftness', title: '기동력', description: '이동속도 +8%' },
   vitality: { id: 'vitality', title: '생명력', description: '최대 HP +15 · HP 15 회복' },
   focus: { id: 'focus', title: '집중', description: '모든 마법 쿨타임 7% 감소' },

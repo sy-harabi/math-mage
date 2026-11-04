@@ -1,5 +1,6 @@
 import { term, termText, derivativeOf, integralOf } from './monomial.js?v=constant-derivative-1';
 import { normalizePolynomial, polynomialKey, polynomialText, polynomialChoiceLines } from './polynomial.js';
+import { generateDefiniteIntegralSequence } from './definite-integral.js';
 
 /**
  * 스킬·그래픽과 무관한 문제 생성 모듈.
@@ -237,7 +238,8 @@ function monomialDerivative(spec,rng){return polynomialQuestion(spec,rng,'monomi
 function monomialIntegral(spec,rng){return polynomialQuestion(spec,rng,'monomialIntegral');}
 
 /** 새로운 문제 유형은 여기에 생성 함수를 등록하면 됩니다. */
-export const PROBLEM_GENERATORS = Object.freeze({ arithmetic, questionBank, monomialDerivative, monomialIntegral });
+export const PROBLEM_GENERATORS = Object.freeze({ arithmetic, questionBank, monomialDerivative, monomialIntegral,
+  definiteIntegral: (spec,rng)=>generateDefiniteIntegralSequence(spec,rng).question });
 
 export function generateQuestion(spec, rng = Math.random) {
   const generator = PROBLEM_GENERATORS[spec?.kind];

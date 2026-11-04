@@ -1,4 +1,5 @@
 import { normalizePolynomial } from './polynomial.js';
+import { sumIntegralTerms } from './definite-integral.js';
 
 // Native MathML avoids canvas font-shrinking and an extra third-party runtime.
 // All inputs are normalized numeric coefficients produced by our question engine.
@@ -52,4 +53,20 @@ export function boltSequenceMathML(sequence) {
   return `<div class="bolt-charge" role="progressbar" aria-label="번개" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>` +
     `<div class="bolt-source">${math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`)}</div>` +
     `<div class="bolt-answer${selectedTerms.length ? '' : ' is-empty'}">${math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result || '<mspace width="1.5em"/>'}`)}</div>`;
+}
+
+export function definiteIntegralSequenceMathML(sequence) {
+  const {question,selectedTerms,index}=sequence;
+  const input=question.data.inputTerms.map((t,i)=>{
+    const body=`${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`;
+    return `<mstyle class="integral-source-term${i===index?' integral-current-term':i<index?' is-done':''}" mathcolor="${i===index?'#ffc18e':i<index?'#738ca5':'#d8e6f4'}">${body}</mstyle>`;
+  }).join('');
+  const pieces=selectedTerms.map((t,i)=>`${i?mo('+'):''}${mo('(')}${t.num<0?mo('−'):''}${termMarkup(t)}${mo(')')}`).join('');
+  const bounds=`<msubsup>${mo('∫')}${mn(question.data.lower)}${mn(question.data.upper)}</msubsup>`;
+  const charge=sequence.correctIndices.map((_,i)=>`<span class="bolt-step${i<index?' is-filled':i===index?' is-current':''}"></span>`).join('');
+  const total=selectedTerms.length>1?sumIntegralTerms(selectedTerms):null;
+  const sum=total?`${mo('=')}${total.num<0?mo('−'):''}${termMarkup(total)}`:'';
+  return `<div class="bolt-charge" role="progressbar" aria-label="파이어볼" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>`+
+    math(`${bounds}${mo('(')}${input}${mo(')')}${mi('d')}${mi('x')}`)+
+    `<div class="bolt-answer${selectedTerms.length?'':' is-empty'}">${math(`${mo('=')}${pieces||'<mspace width="1.5em"/>'}${sum}`)}</div>`;
 }

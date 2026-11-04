@@ -57,7 +57,7 @@ test('번개 Lv2: 서로 다른 차수의 두 항을 정확히 미분하고 5개
 test('설정된 모든 Lv1 계수·차수 조합의 유효성 검사',()=>{
   for(const spell of Object.values(SPELLS)){
     const base=spell.problem;
-    if(!base.coefficient)continue; // Concept questions have their own bank validation.
+    if(!['monomialDerivative','monomialIntegral'].includes(base.kind))continue; // Other kinds have their own validation.
     for(let a=base.coefficient.min;a<=base.coefficient.max;a++){
       if(!a)continue;
       for(let n=base.exponent.min;n<=base.exponent.max;n++){
