@@ -13,8 +13,8 @@ export const SPELLS = Object.freeze({
       answerCount:5, distractorWeights:DISTRACTOR_WEIGHTS,
     },
     levels: {
-      2: { chainTargets: 3, damageByJump: [20, 20, 20], problem: { termCount: 2 } },
-      3: { chainTargets: 5, damageByJump: [20, 20, 20, 20, 20], problem: { termCount: 3 } },
+      2: { chainTargets: 3, damageByJump: [30, 30, 30], problem: { termCount: 2 } },
+      3: { chainTargets: 5, damageByJump: [40, 40, 40, 40, 40], problem: { termCount: 3 } },
     },
   },
   heal: {
