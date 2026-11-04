@@ -429,7 +429,7 @@ window.addEventListener('keydown',ev=>{
   keys.add(key);if(MOVE_KEYS.has(key))touchTarget=null;
   if(ev.repeat)return;
   if(mode==='question'&&/^[1-5]$/.test(key)){selectAnswer(Number(key)-1);return;}
-  if(key==='1')begin('bolt');if(key==='2')begin('heal');if(key==='3')begin('fireball');if(key==='4')begin('shield');
+  if(key==='1')begin('bolt');if(key==='2')begin('fireball');if(key==='3')begin('shield');if(key==='4')begin('heal');
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
@@ -606,7 +606,7 @@ function updateUI(){
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
   dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
-    `번개 Lv${p.levels.bolt} / 힐 Lv${p.levels.heal} / 파이어볼 Lv${p.levels.fireball} / 보호막 Lv${p.levels.shield}`;
+    `번개 Lv${p.levels.bolt} / 파이어볼 Lv${p.levels.fireball} / 보호막 Lv${p.levels.shield} / 힐 Lv${p.levels.heal}`;
   if(DEBUG){for(const which of SKILL_IDS){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){
       const chosen=p.levels[which]===Number(button.dataset[which+'Level']);

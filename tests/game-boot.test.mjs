@@ -114,7 +114,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
   try{
     await import('../src/game.js?indefinite-integral-events');
     for(let level=1;level<=3;level++){
-      get('restart').click();debug.dataset.fireballLevel=String(level);debug.click();key('3');
+      get('restart').click();debug.dataset.fireballLevel=String(level);debug.click();key('2');
       const expected=generateIntegralSequence(getSpellAtLevel('fireball',level).problem,()=>.25);
       let previousNodes=null;
       const left=get('rune-frame').style.left;
@@ -149,7 +149,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
       assert.ok(Math.abs(parseFloat(get('fireball-fill').style.width)-100*.05/([5,8,10][level-1]))<1e-8,'bar uses the same rank duration');
     }
     // Bring the two initial slimes into view, then verify real damage/XP resolve in the click handler.
-    get('restart').click();debug.dataset.fireballLevel='3';debug.click();key('3');key('d');
+    get('restart').click();debug.dataset.fireballLevel='3';debug.click();key('2');key('d');
     for(let t=201;t<=651;t+=50){translations.length=0;frame(t);}
     listeners.get('keyup')({key:'d'});
     const expected=generateIntegralSequence(getSpellAtLevel('fireball',3).problem,()=>.25);
@@ -168,7 +168,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
       assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
       key('Backspace');nodes[expected.correctIndices[position]].click();
       assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
-      key('3');assert.match(get('toast').textContent,/쿨타임/);
+      key('2');assert.match(get('toast').textContent,/쿨타임/);
     }
   }finally{Math.random=random;}
 });
@@ -264,7 +264,7 @@ function defensiveGameMock() {
     step(){state.time+=50;state.frame(state.time);},hp:()=>Math.round(state.hpWidth/54*100)};
 }
 
-test('shield key 4 casts every derivative rank and blocks real overlapping melee hits without losing HP',async()=>{
+test('shield key 3 casts every derivative rank and blocks real overlapping melee hits without losing HP',async()=>{
   const {generateBoltSequence}=await import('../src/bolt-sequence.js');
   const {getSpellAtLevel}=await import('../src/spells.js');
   const mock=defensiveGameMock(),{get}=mock;
@@ -272,7 +272,7 @@ test('shield key 4 casts every derivative rank and blocks real overlapping melee
   try{
     await import('../src/game.js?shield-flow');
     for(let rank=1;rank<=3;rank++){
-      get('restart').click();mock.level('shield',rank);mock.key('4');
+      get('restart').click();mock.level('shield',rank);mock.key('3');
       const expected=generateBoltSequence(getSpellAtLevel('shield',rank).problem,()=>.25);
       assert.match(get('math-problem').innerHTML,/aria-label="보호막"/);
       for(let i=0;i<rank;i++){
@@ -322,7 +322,7 @@ test('healing uses refreshed fireball-style integral runes, requires +C, and hea
       get('restart').click();mock.step();
       for(let frame=0;frame<300&&mock.hp()===100;frame++)mock.step();
       assert.equal(mock.hp(),80);
-      mock.level('heal',rank);mock.key('2');
+      mock.level('heal',rank);mock.key('4');
       const expected=generateIntegralSequence(getSpellAtLevel('heal',rank).problem,()=>.25);
       assert.match(get('math-problem').innerHTML,/aria-label="힐"/);
       let previous=null;
