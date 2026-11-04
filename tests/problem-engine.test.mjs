@@ -21,7 +21,7 @@ function inspect(q, spec) {
   assert.deepEqual(q.choices,q.data.choiceTermPolys.map((terms,i)=>
     polynomialText(terms)+(q.data.choiceHasConstant[i]?' + C':'')));
   assert.equal(q.choiceLines.length,spec.answerCount);
-  assert.ok(q.display.length===2 || q.display.length===3);
+  assert.ok(q.display.length>=2 && q.display.length<=4);
 }
 
 test('미분, 적분 Lv1: 임의의 2,000문제 — 정답 및 고유 보기 5개',()=>{
@@ -117,4 +117,21 @@ test('설정 오류: 계수 0, 불가능한 항 수, 가중치 합계 오류',()
   assert.throws(()=>generateQuestion({...base,coefficient:{min:0,max:0}}),/계수/);
   assert.throws(()=>generateQuestion({...base,termCount:10}),/설정/);
   assert.throws(()=>generateQuestion({...base,distractorWeights:{formula:1,signConstant:.2,arithmetic:.3}}),/합계/);
+});
+
+
+test('번개 Lv3: 3항 다항식 미분, 보기 5개 고유성 및 Lv1·Lv2 설정 보존',()=>{
+  const spec=getSpellAtLevel('bolt',3);
+  assert.equal(spec.chainTargets,3);
+  assert.equal(spec.problem.termCount,3);
+  assert.equal(getSpellAtLevel('bolt',1).problem.termCount,1);
+  assert.equal(getSpellAtLevel('bolt',2).problem.termCount,2);
+  for(let i=0;i<2000;i++){
+    const q=generateQuestion(spec.problem);
+    inspect(q,spec.problem);
+    assert.equal(q.data.inputTerms.length,3);
+    assert.equal(new Set(q.data.inputTerms.map(t=>t.power)).size,3);
+    assert.equal(q.display.length,4);
+    assert.ok(q.choiceLines.every(lines=>lines.length>=1 && lines.length<=3));
+  }
 });

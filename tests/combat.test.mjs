@@ -17,3 +17,9 @@ test('연쇄 범위 밖의 적·죽은 적은 제외하고 중복 타격하지 �
   assert.deepEqual(resolveChainTargets(a,[a,outside,dead],2,260),[a]);
   assert.deepEqual(resolveChainTargets(a,[a,dead,dead],2,260),[a]);
 });
+
+
+test('번개 Lv3은 첫 대상을 포함해 3개체를 순차적으로 연쇄한다',()=>{
+  const a={x:0,y:0,hp:20},b={x:100,y:0,hp:20},c={x:300,y:0,hp:20},out={x:850,y:0,hp:20};
+  assert.deepEqual(resolveChainTargets(a,[a,c,b,out],3,260),[a,b,c]);
+});

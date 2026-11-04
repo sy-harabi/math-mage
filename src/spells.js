@@ -14,6 +14,7 @@ export const SPELLS = Object.freeze({
     },
     levels: {
       2: { chainTargets: 2, problem: { termCount: 2 } },
+      3: { chainTargets: 3, problem: { termCount: 3 } },
     },
   },
   heal: {

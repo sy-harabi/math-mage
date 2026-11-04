@@ -13,3 +13,10 @@
 .cooldown-fill{display:block;width:100%;height:100%;border-radius:8px;background:#f1c759;transition:width .075s linear}
 .heal-skill .cooldown-fill{background:#67d69c}
 @media(max-width:640px){#buttons .skill-button{min-width:130px;flex:1;gap:5px;padding:8px}.skill-state{font-size:10px}}
+
+/* v0.8: persistent, explicit test level selector. */
+#level-picker{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:3px 0 10px}
+#level-picker strong{font-size:13px;color:#c8defa;margin-right:4px}
+#level-picker button{padding:7px 11px;min-height:35px;font-size:12px;border-color:#4d607c;background:#192c42}
+#level-picker button.selected{background:#456687;border-color:#f1cd76;box-shadow:inset 0 0 0 1px #f1cd76;color:white}
+@media(max-width:640px){#level-picker strong{width:100%}#level-picker button{flex:1;padding:7px 5px;font-size:11px}}

@@ -200,7 +200,10 @@ function polynomialQuestion(spec, rng, kind) {
   const originalTerms=input.map(({a,n})=>term(a,1,n));
   const expression=polynomialText(originalTerms);
   const display=derivative
-    ? termCount===1 ? [`f(x) = ${expression}`,'f′(x) = ?'] : ['f(x) =',expression,'f′(x) = ?']
+    ? termCount===1 ? [`f(x) = ${expression}`,'f′(x) = ?']
+      : termCount===2 ? ['f(x) =',expression,'f′(x) = ?']
+      : ['f(x) =',polynomialText(originalTerms.slice(0,2)),
+        polynomialChoiceLines(originalTerms)[2],'f′(x) = ?']
     : [`∫ ${expression} dx`,'= ?'];
   return {
     prompt: derivative?`f(x) = ${expression}, f′(x) = ?`:`∫ ${expression} dx = ?`,
