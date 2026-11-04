@@ -16,6 +16,7 @@ import { pickEnemyAt } from './targeting.js';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
 import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 import { grantShield, applyPlayerHit } from './shield.js';
+import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=1.7.0';
 
 (() => {
 'use strict';
@@ -26,6 +27,8 @@ const FAIL_SLOW_SECONDS = 1.5, FAIL_SPEED_MULT = .5;
 const DEBUG = new URLSearchParams(window.location.search).get('debug') === '1';
 const SKILL_IDS=Object.keys(SPELLS);
 const dom = {
+  healthFill:document.getElementById('health-fill'),healthLabel:document.getElementById('health-label'),
+  healthMeter:document.getElementById('health-meter'),
   kills: document.getElementById('kills'), enemyCount: document.getElementById('enemies-count'),
   runTime: document.getElementById('run-time'), characterLevel: document.getElementById('character-level'),
   xpLabel: document.getElementById('xp-label'), xpFill: document.getElementById('xp-progress-fill'),
@@ -65,6 +68,10 @@ function updateRunePosition() {
   if(mode!=='question')return;
   dom.runeFrame.style.left=((p.x-camera.x)/W*100)+'%';
   dom.runeFrame.style.top=((p.y-camera.y)/H*100)+'%';
+}
+function updateRuneScale(){
+  // Match CSS-sized runes to the fixed world viewport, never to the spell mode.
+  dom.runeFrame.style.transform=`translate(-50%,-50%) scale(${C.getBoundingClientRect().width/W})`;
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
@@ -468,32 +475,14 @@ function fittedLabel(str,x,y,maxWidth,size=20,color='#fff',weight='700'){
 }
 function drawEnemy(e,selected=false){
   const cfg=ENEMY_TYPES[e.type];
-  ctx.save();ctx.translate(e.x,e.y);
-  ctx.scale(1+Math.sin(e.wiggle)*.045,1-Math.sin(e.wiggle)*.04);
-  circle(0,0,e.r,cfg.fill,cfg.border,e.type==='boss'?4:2);
-  circle(-e.r*.35,-4,e.type==='boss'?6:3,'#241c32');
-  circle(e.r*.35,-4,e.type==='boss'?6:3,'#241c32');
-  if(e.type==='boss'){
-    ctx.fillStyle='#ffdc69';ctx.beginPath();ctx.moveTo(-20,-e.r+4);
-    ctx.lineTo(-10,-e.r-16);ctx.lineTo(0,-e.r-3);ctx.lineTo(12,-e.r-20);
-    ctx.lineTo(22,-e.r+4);ctx.closePath();ctx.fill();
-  }
-  ctx.restore();
+  drawNeonSlime(ctx,e,p);
   const barW=e.r*2+6, y=e.y-e.r-16;
-  ctx.fillStyle='#482733';ctx.fillRect(e.x-barW/2,y,barW,6);
-  ctx.fillStyle=cfg.border;ctx.fillRect(e.x-barW/2,y,barW*e.hp/e.max,6);
+  ctx.fillStyle='#24233b';ctx.fillRect(e.x-barW/2,y,barW,4);
+  ctx.fillStyle=NEON[e.type];ctx.fillRect(e.x-barW/2,y,barW*e.hp/e.max,4);
   if(selected){
     ctx.strokeStyle='#fff0a8';ctx.lineWidth=2;
     ctx.strokeRect(e.x-barW/2-2,y-2,barW+4,10);
     label(`${e.hp}/${e.max}`,e.x,y-13,14,'#fff0a8');
-  }
-  if(e.type==='ranged'&&e.windup>0&&e.aim){
-    const spec=ENEMY_TYPES.ranged;
-    const beam=createLaserSegment(e,e.aim,spec.laserRange);
-    ctx.save();ctx.strokeStyle='#ee73c9';ctx.globalAlpha=.22;ctx.lineWidth=spec.laserWidth;
-    ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);ctx.lineTo(beam.x2,beam.y2);ctx.stroke();
-    ctx.globalAlpha=1;ctx.setLineDash([8,5]);ctx.strokeStyle='#ffc6eb';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(beam.x1,beam.y1);ctx.lineTo(beam.x2,beam.y2);ctx.stroke();ctx.restore();
   }
   if(e.type==='boss'&&e.action==='windupSlam'&&e.aim){
     ctx.fillStyle='#ff695135';ctx.strokeStyle='#ff856a';ctx.lineWidth=3;
@@ -508,14 +497,12 @@ function drawEnemy(e,selected=false){
 function draw(){
   const selected=mode==='target'&&spell==='bolt'&&!gameOver&&pointer?pickEnemyAt(worldPoint(pointer),enemies):null;
   C.style.cursor=mode==='target'&&!gameOver?(selected?'pointer':'crosshair'):'';
-  ctx.clearRect(0,0,W,H);ctx.fillStyle='#13243b';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='#1e3652';ctx.lineWidth=1;
-  for(let x=Math.floor(camera.x/48)*48;x<camera.x+W;x+=48){ctx.beginPath();ctx.moveTo(x-camera.x,0);ctx.lineTo(x-camera.x,H);ctx.stroke();}
-  for(let y=Math.floor(camera.y/48)*48;y<camera.y+H;y+=48){ctx.beginPath();ctx.moveTo(0,y-camera.y);ctx.lineTo(W,y-camera.y);ctx.stroke();}
+  ctx.clearRect(0,0,W,H);drawNeonArena(ctx,camera,W,H);
   ctx.save();ctx.translate(-camera.x,-camera.y);
   if(touchTarget)circle(touchTarget.x,touchTarget.y,9,null,'#729cbd',1);
   const fireballCenter=mode==='target'&&spell==='fireball'?(pointer?worldPoint(pointer):p):null;
   const fireballTargets=new Set(fireballCenter?resolveAreaHits(fireballCenter,enemies,activeCastConfig.radius,activeCastConfig.power).map(hit=>hit.enemy):[]);
+  enemies.filter(e=>e.type==='ranged').forEach(e=>drawLaserWarning(ctx,e,ENEMY_TYPES.ranged));
   enemies.forEach(e=>drawEnemy(e,e===selected||fireballTargets.has(e)));
   if(fireballCenter){
     circle(fireballCenter.x,fireballCenter.y,activeCastConfig.radius,'#ff8d343f','#ffc18e',2);
@@ -525,12 +512,7 @@ function draw(){
     ctx.save();ctx.globalAlpha=blast.ttl/.4;
     circle(blast.x,blast.y,blast.r,'#ff8d3480','#ffe1a0',3);ctx.restore();
   }
-  for(const laser of lasers){
-    ctx.save();ctx.strokeStyle='#fb65ce';ctx.shadowColor='#ff96e4';ctx.shadowBlur=22;
-    ctx.lineWidth=laser.width;ctx.globalAlpha=.72;
-    ctx.beginPath();ctx.moveTo(laser.x1,laser.y1);ctx.lineTo(laser.x2,laser.y2);ctx.stroke();
-    ctx.globalAlpha=1;ctx.strokeStyle='#fff0fa';ctx.lineWidth=7;ctx.stroke();ctx.restore();
-  }
+  for(const laser of lasers)drawNeonLaser(ctx,laser);
   if(p.shields>0){
     circle(p.x,p.y,32,'#7ee9ff12','#8befffc2',1.8);
     for(let i=0;i<p.shields;i++){
@@ -544,19 +526,12 @@ function draw(){
     ctx.save();ctx.globalAlpha=p.shieldFlash/.3;
     circle(p.x,p.y,32+(1-p.shieldFlash/.3)*17,'#a4f3ff25','#c2faff',3);ctx.restore();
   }
-  ctx.save();ctx.translate(p.x,p.y);
-  if(p.inv>0&&Math.floor(performance.now()/90)%2===0)ctx.globalAlpha=.45;
-  circle(0,0,22,'#4b92e3','#b4d9ff',3);ctx.rotate(p.face);
-  ctx.fillStyle='#d7ecff';ctx.beginPath();ctx.moveTo(27,0);ctx.lineTo(12,-9);ctx.lineTo(12,9);ctx.closePath();ctx.fill();ctx.restore();
+  drawNeonMage(ctx,p,performance.now());
   const hpW=54,hpY=p.y-41;
   ctx.fillStyle='#09241d';ctx.fillRect(p.x-hpW/2-2,hpY-2,hpW+4,12);
   ctx.fillStyle='#35584c';ctx.fillRect(p.x-hpW/2,hpY,hpW,8);
   ctx.fillStyle='#53df90';ctx.fillRect(p.x-hpW/2,hpY,hpW*p.hp/p.maxHp,8);
   ctx.strokeStyle='#b5f5ce';ctx.lineWidth=1;ctx.strokeRect(p.x-hpW/2-.5,hpY-.5,hpW+1,9);
-  if(!gameOver&&mode==='idle'&&p.cd.bolt<=0){
-    circle(p.x+45,p.y-57,15,'#1b2c42','#eacb70',1.8);
-    label('ϟ',p.x+45,p.y-57,26,'#ffe17c');
-  }
   for(const b of bolts){
     ctx.save();ctx.globalAlpha=Math.min(1,b.ttl/.16);ctx.strokeStyle='#ffe67e';
     ctx.lineWidth=6;ctx.shadowColor='#ffef9c';ctx.shadowBlur=15;
@@ -583,6 +558,10 @@ function draw(){
   }
 }
 function updateUI(){
+  dom.healthFill.style.width=(100*p.hp/p.maxHp)+'%';
+  dom.healthLabel.textContent=`${p.hp} / ${p.maxHp}`;
+  dom.healthMeter.setAttribute('aria-valuemax',String(p.maxHp));
+  dom.healthMeter.setAttribute('aria-valuenow',String(p.hp));
   dom.kills.textContent=kills;
   dom.shieldCount.textContent=p.shields;
   dom.enemyCount.textContent=enemies.length;
@@ -606,7 +585,7 @@ function updateUI(){
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
   dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
-    `번개 Lv${p.levels.bolt} / 파이어볼 Lv${p.levels.fireball} / 보호막 Lv${p.levels.shield} / 힐 Lv${p.levels.heal}`;
+    'WASD 이동 · 클릭 이동 / 조준 · 1–4 마법';
   if(DEBUG){for(const which of SKILL_IDS){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){
       const chosen=p.levels[which]===Number(button.dataset[which+'Level']);
@@ -624,5 +603,7 @@ function loop(ts){
   }
   requestAnimationFrame(loop);
 }
-reset();requestAnimationFrame(loop);
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).observe(C);
+else window.addEventListener('resize',updateRuneScale);
+updateRuneScale();reset();requestAnimationFrame(loop);
 })();
