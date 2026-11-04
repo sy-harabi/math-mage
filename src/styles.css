@@ -100,7 +100,7 @@
 .bolt-answer::after{content:'';position:absolute;bottom:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,#e7c67a99,transparent)}
 .bolt-answer.is-empty::after{animation:bolt-breathe 1.8s ease-in-out infinite}
 .math-cast-hud[data-spell="bolt"] .bolt-answer math{font-size:23px;color:#ffe6a1}
-.math-cast-hud[data-spell="bolt"] .answer-formula math{font-size:21px}
+.math-cast-hud[data-spell="bolt"] .math-choice .answer-formula math{font-size:21px}
 .bolt-formed-term.is-new{animation:bolt-form .22s ease-out}
 @keyframes bolt-breathe{50%{opacity:.3}}
 @keyframes bolt-form{from{opacity:.3}to{opacity:1}}
