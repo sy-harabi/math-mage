@@ -17,8 +17,10 @@ export const ENEMY_TYPES = Object.freeze({
     xp: 10, stageProgress: 8, fill: '#af84ea', border: '#dcc5ff',
   },
   boss: {
-    name: '슬라임 군주', hp: 260, speed: 102, speedVariance: 0,
-    damage: 28, slamDamage: 28, dashDamage: 22, attackInterval: 4.5, radius: 45,
+    name: '슬라임 군주', hp: 260, speed: 140, speedVariance: 0,
+    damage: 28, slamDamage: 28, slamRadius: 175, slamWindup: 1.1,
+    dashDamage: 22, dashSpeed: 620, dashDuration: .8, dashWindup: .8,
+    attackInterval: 3.5, enragedAttackInterval: 3.0, radius: 45,
     xp: 50, stageProgress: 30, fill: '#a964da', border: '#ffc5f6',
   },
 });

@@ -57,9 +57,9 @@ export function questionTimeMultiplier(player) {
   return Math.max(.4, 1 - .15 * (player.bonuses.timeWarp ?? 0));
 }
 
-/** Only the answer-selection phase receives the time-warp upgrade. */
-export function worldTimeMultiplier(mode, player) {
-  return mode === 'question' ? questionTimeMultiplier(player) : 1;
+/** During targeting and movement time always runs at normal speed. */
+export function worldTimeMultiplier(mode,player) {
+  return mode==='question'?questionTimeMultiplier(player):1;
 }
 
 export function cooldownMultiplier(player) {

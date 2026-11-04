@@ -6,20 +6,20 @@ import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js';
+import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
+import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 
 (() => {
 'use strict';
 const C = document.getElementById('game'), ctx = C.getContext('2d');
 const W = C.width, H = C.height, WORLD_W = 3000, WORLD_H = 2200, TWO = Math.PI * 2;
-const PENT = Array.from({length: 5}, (_, i) => ({x: Math.sin(i * TWO / 5) * 158, y: -Math.cos(i * TWO / 5) * 158}));
 const MOVE_KEYS = new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const FAIL_SLOW_SECONDS = 1.5, FAIL_SPEED_MULT = .5;
 const DEBUG = new URLSearchParams(window.location.search).get('debug') === '1';
 const dom = {
   kills: document.getElementById('kills'), enemyCount: document.getElementById('enemies-count'),
-  stageNumber: document.getElementById('stage-number'), stageFill: document.getElementById('stage-progress-fill'),
-  stageText: document.getElementById('stage-progress-text'), characterLevel: document.getElementById('character-level'),
+  runTime: document.getElementById('run-time'), characterLevel: document.getElementById('character-level'),
   xpLabel: document.getElementById('xp-label'), xpFill: document.getElementById('xp-progress-fill'),
   bolt: document.getElementById('bolt'), heal: document.getElementById('heal'),
   boltFill: document.getElementById('bolt-fill'), healFill: document.getElementById('heal-fill'),
@@ -28,20 +28,24 @@ const dom = {
   toast: document.getElementById('toast'), slow: document.getElementById('slow'),
   status: document.getElementById('status'), upgradeOverlay: document.getElementById('upgrade-overlay'),
   upgradeHeading: document.getElementById('upgrade-heading'), upgradeOptions: document.getElementById('upgrade-options'),
-  transitionOverlay: document.getElementById('transition-overlay'), transitionHeading: document.getElementById('transition-heading'),
+  victoryOverlay: document.getElementById('victory-overlay'), victoryTime: document.getElementById('victory-time'),
+  victoryStats: document.getElementById('victory-stats'), victoryRestart:document.getElementById('victory-restart'),
+  mathHud: document.getElementById('math-cast-hud'),
+  mathProblem: document.getElementById('math-problem'), mathAnswers: document.getElementById('math-answers'),
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
 let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig;
-let stage, progression, spawnTimer, transitionTimer, currentChoices, gameOver, last = 0;
+let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
 
 function cameraUpdate() {
-  camera.x = clamp(p.x-W/2,0,WORLD_W-W);
-  camera.y = clamp(p.y-H/2,0,WORLD_H-H);
+  const narrow=window.matchMedia('(max-width: 740px)').matches;
+  camera.x = clamp(p.x-(mode==='question'&&!narrow?W*.42:W/2),0,WORLD_W-W);
+  camera.y = clamp(p.y-(mode==='question'&&narrow?H*.36:H/2),0,WORLD_H-H);
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
@@ -52,21 +56,39 @@ function newPlayer() {
     cd:{bolt:0,heal:0}, levels:{bolt:1,heal:1}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
 function reset() {
-  p = newPlayer(); progression = createProgression(); enemies=[]; particles=[]; bolts=[]; lasers=[];
+  p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[];
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; touchTarget=null;
-  currentChoices=[]; transitionTimer=0;gameOver=false; nextEnemyId=1;
-  dom.upgradeOverlay.hidden=true;dom.transitionOverlay.hidden=true;
-  cameraUpdate(); startStage(1);
+  currentChoices=[];gameOver=false; nextEnemyId=1;
+  dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
+  cameraUpdate(); startRun();
   say('1 번개 · 2 힐 · 몬스터 처치로 XP 획득',3); updateUI();
 }
-function startStage(number) {
-  stage = createStage(number);
-  spawnTimer = stageSpawnConfig(stage.number).interval;
-  enemies=[]; lasers=[];bolts=[];touchTarget=null;
-  cameraUpdate();
-  for(let i=0;i<2;i++) spawnEnemy(randomEnemyType(stageSpawnConfig(number)));
-  dom.transitionOverlay.hidden=true;
-  say(`${number} 스테이지 시작 · 적을 처치하면 게이지와 XP를 획득합니다`,3);
+function startRun() {
+  // Internal phases control enemy spawns, but are never displayed or paused.
+  stage=createStage(1);
+  spawnTimer=stageSpawnConfig(1).interval;
+  for(let i=0;i<2;i++) spawnEnemy('basic');
+}
+function updateHiddenPhase() {
+  while(stage.number<5&&stageIsComplete(stage)) {
+    stage=createStage(stage.number+1);
+    spawnTimer=Math.min(spawnTimer,stageSpawnConfig(stage.number).interval);
+    // Preserve living enemies, projectiles, and the player's position.
+  }
+  if(bossShouldSpawn(stage)) {
+    stage.bossSpawned=true;
+    spawnEnemy('boss');
+    say('슬라임 군주 등장! 처치하면 기록이 확정됩니다',4);
+  }
+}
+function completeRun() {
+  if(mode==='victory')return;
+  finishRunTimer(runTimer);
+  mode='victory';spell=null;question=null;activeCastConfig=null;
+  touchTarget=null;keys.clear();dom.mathHud.hidden=true;
+  dom.victoryTime.textContent=formatRunTime(runTimer.elapsedSeconds);
+  dom.victoryStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
+  dom.victoryOverlay.hidden=false;
 }
 function spawnEnemy(type, x, y) {
   const pos = (Number.isFinite(x) && Number.isFinite(y)) ? {x,y} : chooseSpawnPosition(
@@ -81,9 +103,27 @@ function begin(which) {
   if(p.cd[which]>0) {say(`쿨타임 ${p.cd[which].toFixed(1)}초 남음`);return;}
   spell=which;activeCastConfig=getSpellAtLevel(which,p.levels[which]);
   question=generateQuestion(activeCastConfig.problem);mode='question';
+  displayMathQuestion();
   say(which==='bolt'?'도함수를 구하세요.':'부정적분을 구하세요.',2);
 }
+function displayMathQuestion() {
+  dom.mathProblem.innerHTML=problemMathML(question,spell);
+  dom.mathAnswers.replaceChildren();
+  question.data.choiceTermPolys.forEach((terms,index)=>{
+    const button=document.createElement('button');
+    button.type='button';button.className='math-choice';
+    button.setAttribute('aria-label',`${index+1}번: ${question.choices[index]}`);
+    const key=document.createElement('span');key.className='answer-key';key.textContent=String(index+1);
+    const formula=document.createElement('span');formula.className='answer-formula';
+    formula.innerHTML=polynomialMathML(terms,question.data.choiceHasConstant[index]);
+    button.append(key,formula);
+    button.addEventListener('click',()=>selectAnswer(index));
+    dom.mathAnswers.append(button);
+  });
+  dom.mathHud.hidden=false;
+}
 function endCast() {
+  dom.mathHud.hidden=true;
   if(spell)p.cd[spell]=SPELLS[spell].cooldownSeconds*cooldownMultiplier(p);
   mode='idle';spell=null;question=null;activeCastConfig=null;
   checkMilestones();
@@ -95,6 +135,7 @@ function sparkle(x,y,color,count=16) {
 }
 function selectAnswer(index) {
   if(mode!=='question')return;
+  dom.mathHud.hidden=true;
   if(index!==question.correct){
     sparkle(p.x,p.y,'#ff6988',12);p.failSlow=FAIL_SLOW_SECONDS;
     say(`오답! 정답 ${question.answer} · 1.5초 이동 감속`,3);endCast();return;
@@ -110,6 +151,8 @@ function killedEnemy(e) {
   kills++;
   addStageKill(stage,e);
   addXp(progression,e.xp);
+  if(e.type==='boss')completeRun();
+  else updateHiddenPhase();
 }
 function castEnemy(primary) {
   if(mode!=='target')return;
@@ -121,7 +164,10 @@ function castEnemy(primary) {
     sparkle(enemy.x,enemy.y,'#ffe17c',14);from=enemy;
   }
   const defeated=hits.filter(({enemy})=>enemy.hp<=0);
-  defeated.forEach(({enemy})=>killedEnemy(enemy));
+  // Resolve other defeated monsters first, then the boss for accurate final stats.
+  defeated.filter(({enemy})=>enemy.type!=='boss').forEach(({enemy})=>killedEnemy(enemy));
+  defeated.filter(({enemy})=>enemy.type==='boss').forEach(({enemy})=>killedEnemy(enemy));
+  if(mode==='victory')return;
   say(`번개 ${hits.length}개체 타격 · ${defeated.length}마리 처치 · +${defeated.reduce((n,{enemy})=>n+enemy.xp,0)} XP`);
   endCast();
 }
@@ -150,21 +196,16 @@ function selectUpgrade(id) {
   say('강화 완료 · 다음 전투를 준비하세요',2);
   checkMilestones();
 }
-function startTransition() {
-  mode='transition';transitionTimer=2;touchTarget=null;keys.clear();
-  dom.transitionHeading.textContent=`스테이지 ${stage.number} 완료!`;
-  dom.transitionOverlay.hidden=false;
-}
 function checkMilestones() {
   if(gameOver||mode!=='idle')return;
   if(progression.pendingUpgrades>0){openUpgrade();return;}
-  if(stageIsComplete(stage))startTransition();
+  updateHiddenPhase();
 }
 function hurtPlayer(amount, message) {
-  if(gameOver||p.inv>0||mode==='upgrade'||mode==='transition')return false;
+  if(gameOver||p.inv>0||mode==='upgrade'||mode==='victory')return false;
   p.hp=Math.max(0,p.hp-amount);p.inv=.65;
   sparkle(p.x,p.y,'#ff8a8a',9);say(`${message} · HP -${amount}`,1.5);
-  if(p.hp<=0){gameOver=true;mode='idle';say('게임 오버 · 다시 시작을 누르세요',10000);}
+  if(p.hp<=0){gameOver=true;finishRunTimer(runTimer);mode='idle';dom.mathHud.hidden=true;say('게임 오버 · 다시 시작을 누르세요',10000);}
   return true;
 }
 function handleMelee(e,wd) {
@@ -202,9 +243,9 @@ function handleBoss(e,wd) {
   if(e.action==='windupSlam'){
     e.actionTimer-=wd;
     if(e.actionTimer<=0){
-      if(Math.hypot(p.x-e.aim.x,p.y-e.aim.y)<130+18)hurtPlayer(spec.slamDamage,'보스 내려찍기');
+      if(Math.hypot(p.x-e.aim.x,p.y-e.aim.y)<spec.slamRadius+18)hurtPlayer(spec.slamDamage,'보스 내려찍기');
       sparkle(e.aim.x,e.aim.y,'#ffa16b',36);
-      e.action='chase';e.attack=e.hp<e.max/2?3.7:4.5;
+      e.action='chase';e.attack=e.hp<e.max/2?spec.enragedAttackInterval:spec.attackInterval;
     }
     return;
   }
@@ -212,28 +253,28 @@ function handleBoss(e,wd) {
     e.actionTimer-=wd;
     if(e.actionTimer<=0){
       const vx=e.aim.x-e.x,vy=e.aim.y-e.y,dist=Math.hypot(vx,vy)||1;
-      e.dashX=vx/dist;e.dashY=vy/dist;e.action='dash';e.actionTimer=.7;e.dashHit=false;
+      e.dashX=vx/dist;e.dashY=vy/dist;e.action='dash';e.actionTimer=spec.dashDuration;e.dashHit=false;
     }
     return;
   }
   if(e.action==='dash'){
-    e.x=clamp(e.x+e.dashX*470*wd,30,WORLD_W-30);
-    e.y=clamp(e.y+e.dashY*470*wd,30,WORLD_H-30);
+    e.x=clamp(e.x+e.dashX*spec.dashSpeed*wd,30,WORLD_W-30);
+    e.y=clamp(e.y+e.dashY*spec.dashSpeed*wd,30,WORLD_H-30);
     if(!e.dashHit&&distance(e,p)<e.r+21){hurtPlayer(spec.dashDamage,'보스 돌진');e.dashHit=true;}
     e.actionTimer-=wd;
-    if(e.actionTimer<=0){e.action='chase';e.attack=e.hp<e.max/2?3.7:4.5;}
+    if(e.actionTimer<=0){e.action='chase';e.attack=e.hp<e.max/2?spec.enragedAttackInterval:spec.attackInterval;}
     return;
   }
   const d=distance(e,p)||1;
-  if(d>125){e.x+=(p.x-e.x)/d*e.speed*wd;e.y+=(p.y-e.y)/d*e.speed*wd;}
+  if(d>spec.slamRadius*.85){e.x+=(p.x-e.x)/d*e.speed*wd;e.y+=(p.y-e.y)/d*e.speed*wd;}
   if(e.attack<=0){
     // The boss cannot slam a remote player while it is still off-screen.
-    if(d>420){e.attack=.7;return;}
+    if(d>550){e.attack=.7;return;}
     e.aim={x:p.x,y:p.y};
-    const useDash=d>205||e.actionCount%2===1;
+    const useDash=d>spec.slamRadius+35||e.actionCount%2===1;
     e.actionCount++;
     e.action=useDash?'windupDash':'windupSlam';
-    e.actionTimer=useDash?.9:1.2;
+    e.actionTimer=useDash?spec.dashWindup:spec.slamWindup;
   }
 }
 function moveEnemies(wd) {
@@ -270,13 +311,7 @@ function moveHero(wd) {
   }
 }
 function tick(dt) {
-  if(gameOver)return;
-  if(mode==='upgrade')return;
-  if(mode==='transition'){
-    transitionTimer-=dt;
-    if(transitionTimer<=0){mode='idle';startStage(stage.number+1);checkMilestones();}
-    return;
-  }
+  if(gameOver||mode==='victory'||mode==='upgrade')return;
   const wd=dt*worldTimeMultiplier(mode,p);
   p.inv=Math.max(0,p.inv-wd);
   p.failSlow=Math.max(0,p.failSlow-dt);
@@ -285,10 +320,8 @@ function tick(dt) {
   moveEnemies(wd);moveLasers(wd);
   if(gameOver)return;
   addStageTime(stage,wd);
-  if(bossShouldSpawn(stage)){
-    stage.bossSpawned=true;spawnEnemy('boss');say('슬라임 군주 등장! 보스를 처치하세요',4);
-  }
-  if(!stageIsComplete(stage)){
+  updateHiddenPhase();
+  if(mode!=='victory'){
     spawnTimer-=wd;
     const interval=stageSpawnConfig(stage.number).interval;
     while(spawnTimer<=0){
@@ -304,21 +337,13 @@ function tick(dt) {
 }
 function point(ev){const r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height};}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y};}
-function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:clamp(sx,210,W-210),y:clamp(sy-35,195,H-215)};}
 C.addEventListener('pointerdown',ev=>{
-  ev.preventDefault();if(gameOver||mode==='upgrade'||mode==='transition')return;
+  ev.preventDefault();if(gameOver||mode==='upgrade'||mode==='victory')return;
   const t=point(ev);
-  if(mode==='question'){
-    const m=magicCenter();
-    for(let i=0;i<5;i++){
-      if(Math.abs(t.x-m.x-PENT[i].x)<85&&Math.abs(t.y-m.y-PENT[i].y)<42){selectAnswer(i);return;}
-    }
-    return;
-  }
   if(mode==='target'){
     const wp=worldPoint(t);
     const hit=enemies.filter(e=>distance(wp,e)<e.r+20).sort((a,b)=>distance(wp,a)-distance(wp,b))[0];
-    if(hit)castEnemy(hit);else say('적을 클릭하세요.');
+    if(hit)castEnemy(hit);else touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:wp;
     return;
   }
   touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:worldPoint(t);
@@ -326,15 +351,18 @@ C.addEventListener('pointerdown',ev=>{
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',ev=>{
   const key=ev.key.toLowerCase();
-  if(MOVE_KEYS.has(key)||key==='1'||key==='2'||key==='escape')ev.preventDefault();
-  if(mode==='upgrade'||mode==='transition'||gameOver){if(key==='r'&&gameOver)reset();return;}
+  if(MOVE_KEYS.has(key)||/^[1-5]$/.test(key)||key==='escape')ev.preventDefault();
+  if(mode==='upgrade'||mode==='victory'||gameOver){if(key==='r'&&(gameOver||mode==='victory'))reset();return;}
   keys.add(key);if(MOVE_KEYS.has(key))touchTarget=null;
   if(ev.repeat)return;
+  if(mode==='question'&&/^[1-5]$/.test(key)){selectAnswer(Number(key)-1);return;}
   if(key==='1')begin('bolt');if(key==='2')begin('heal');
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
 window.addEventListener('blur',()=>keys.clear());
+document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
+dom.victoryRestart.addEventListener('click',reset);
 for(const name of ['bolt','heal','cancel','restart']){
   dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel,restart:reset})[name]());
 }
@@ -342,7 +370,7 @@ const directions={up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowrig
 for(const b of document.querySelectorAll('[data-dir]')){
   const key=directions[b.dataset.dir];
   b.addEventListener('pointerdown',e=>{
-    e.preventDefault();if(mode==='upgrade'||mode==='transition')return;
+    e.preventDefault();if(mode==='upgrade'||mode==='victory')return;
     b.setPointerCapture(e.pointerId);keys.add(key);touchTarget=null;
   });
   for(const name of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(name,()=>keys.delete(key));
@@ -400,12 +428,12 @@ function drawEnemy(e){
   }
   if(e.type==='boss'&&e.action==='windupSlam'&&e.aim){
     ctx.fillStyle='#ff695135';ctx.strokeStyle='#ff856a';ctx.lineWidth=3;
-    ctx.beginPath();ctx.arc(e.aim.x,e.aim.y,130,0,TWO);ctx.fill();ctx.stroke();
+    ctx.beginPath();ctx.arc(e.aim.x,e.aim.y,cfg.slamRadius,0,TWO);ctx.fill();ctx.stroke();
   }
   if(e.type==='boss'&&e.action==='windupDash'&&e.aim){
     const dx=e.aim.x-e.x,dy=e.aim.y-e.y,len=Math.hypot(dx,dy)||1;
-    ctx.strokeStyle='#ff9074';ctx.lineWidth=48;ctx.globalAlpha=.24;
-    ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+dx/len*300,e.y+dy/len*300);ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle='#ff9074';ctx.lineWidth=2*(e.r+21);ctx.globalAlpha=.24;
+    ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+dx/len*cfg.dashSpeed*cfg.dashDuration,e.y+dy/len*cfg.dashSpeed*cfg.dashDuration);ctx.stroke();ctx.globalAlpha=1;
   }
 }
 function draw(){
@@ -448,30 +476,6 @@ function draw(){
   for(const v of particles){ctx.globalAlpha=Math.max(0,Math.min(1,v.life/v.max));circle(v.x,v.y,3,v.color);}
   ctx.globalAlpha=1;ctx.restore();
   if(p.failSlow>0){label(`이동 감속 ${p.failSlow.toFixed(1)}초`,W/2,60,16,'#f5a2b9');}
-  if(mode==='question'){
-    const m=magicCenter(),pts=PENT.map(v=>({x:m.x+v.x,y:m.y+v.y}));
-    ctx.fillStyle='#07162ce8';ctx.strokeStyle=spell==='heal'?'#7ef7b5':'#80bdff';ctx.lineWidth=3;
-    ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();ctx.stroke();
-    ctx.beginPath();pts.forEach((v,i)=>i?ctx.lineTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74):ctx.moveTo(m.x+(v.x-m.x)*.74,m.y+(v.y-m.y)*.74));ctx.closePath();ctx.lineWidth=1;ctx.stroke();
-    const lines=question.display??[question.prompt];
-    if(lines.length===4){
-      fittedLabel(lines[0],m.x,m.y-70,240,24);
-      fittedLabel(lines[1],m.x,m.y-41,250,23);
-      fittedLabel(lines[2],m.x,m.y-12,240,23);
-      fittedLabel(lines[3],m.x,m.y+24,220,26);
-    }
-    else if(lines.length===3){fittedLabel(lines[0],m.x,m.y-49,240,23);fittedLabel(lines[1],m.x,m.y-19,260,26);fittedLabel(lines[2],m.x,m.y+18,230,29);}
-    else if(lines.length===2){fittedLabel(lines[0],m.x,m.y-23,232,29);fittedLabel(lines[1],m.x,m.y+17,220,30);}
-    else fittedLabel(lines[0],m.x,m.y-4,230,30);
-    label(spell==='heal'?'부정적분 · +C 포함':'도함수',m.x,m.y+63,15,'#a7c8e5','500');
-    pts.forEach((v,i)=>{
-      ctx.beginPath();ctx.ellipse(v.x,v.y,80,38,0,0,TWO);ctx.fillStyle='#234971';ctx.fill();ctx.strokeStyle='#b3d9ff';ctx.lineWidth=2.5;ctx.stroke();
-      const choiceLines=question.choiceLines?.[i]??[String(question.choices[i])];
-      if(choiceLines.length>1)choiceLines.forEach((line,j)=>fittedLabel(line,v.x,v.y-(choiceLines.length-1)*10+j*20,148,20));
-      else fittedLabel(choiceLines[0],v.x,v.y,148,25);
-    });
-    label('정답을 클릭하세요',m.x,m.y+208,15,'#d5e6ff');
-  }
   if(mode==='target'){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
     label('번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
@@ -480,24 +484,22 @@ function draw(){
   if(gameOver){
     ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);
     label('GAME OVER',W/2,H/2-25,48);
-    label(`스테이지 ${stage.number} · Lv${progression.level} · ${kills}마리 처치`,W/2,H/2+35,20,'#c6d8ef');
+    label(`생존 ${formatRunTime(runTimer.elapsedSeconds)} · Lv${progression.level} · ${kills}마리 처치`,W/2,H/2+35,20,'#c6d8ef');
     label('다시 시작 버튼이나 R 키를 누르세요',W/2,H/2+72,17,'#c6d8ef');
   }
 }
 function updateUI(){
   dom.kills.textContent=kills;
   dom.enemyCount.textContent=enemies.length;
-  dom.stageNumber.textContent=stage.number;
-  dom.stageFill.style.width=Math.min(100,stage.progress)+'%';
-  dom.stageText.textContent=`스테이지 ${stage.number} · ${Math.floor(stage.progress)}%${stage.number%5===0&&stage.bossSpawned&&!stage.bossDefeated?' · 보스 격파 필요':''}`;
+  dom.runTime.textContent=formatRunTime(runTimer.elapsedSeconds);
   const xp=xpToNext(progression);
   dom.characterLevel.textContent=progression.level;
   dom.xpLabel.textContent=`${xp.current}/${xp.required}`;
   dom.xpFill.style.width=Math.min(100,xp.current/xp.required*100)+'%';
   const qSpeed=worldTimeMultiplier(mode,p);
-  const showTimeWarp=mode==='question'&&qSpeed<1;
-  dom.slow.style.display=showTimeWarp?'block':'none';
-  dom.slow.textContent=showTimeWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
+  const showWarp=mode==='question'&&qSpeed<1;
+  dom.slow.style.display=showWarp?'block':'none';
+  dom.slow.textContent=showWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
   for(const k of ['bolt','heal']){
     const ready=p.cd[k]<=0,cdTotal=SPELLS[k].cooldownSeconds*cooldownMultiplier(p);
     const fill=100*clamp(1-p.cd[k]/cdTotal,0,1);
@@ -507,7 +509,7 @@ function updateUI(){
     dom[k+'State'].textContent=`Lv${p.levels[k]} · `+(ready?'준비':p.cd[k].toFixed(1)+'초');
   }
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
-  dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='transition'?'다음 스테이지 준비 중':
+  dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?'마법진: 정답 선택':mode==='target'?'적을 클릭해 발사':gameOver?'게임 오버':
     `번개 Lv${p.levels.bolt} / 힐 Lv${p.levels.heal}`;
   if(DEBUG){for(const which of ['bolt','heal']){
@@ -520,8 +522,12 @@ function updateUI(){
 }
 function loop(ts){
   if(!last)last=ts;
-  const dt=Math.min(.05,(ts-last)/1000);last=ts;
-  tick(dt);draw();updateUI();requestAnimationFrame(loop);
+  const rawDt=Math.max(0,(ts-last)/1000);last=ts;
+  if(!document.hidden){
+    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='upgrade'&&mode!=='victory');
+    tick(Math.min(.05,rawDt));draw();updateUI();
+  }
+  requestAnimationFrame(loop);
 }
 reset();requestAnimationFrame(loop);
 })();
