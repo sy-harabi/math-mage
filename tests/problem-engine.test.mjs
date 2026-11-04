@@ -22,10 +22,18 @@ for (const [id, spell] of Object.entries(SPELLS)) {
       const expected = id === 'bolt' ? derivativeOf(a, n) : integralOf(a, n);
       assert.deepEqual(answerTerm, expected);
       assert.equal(termKey(choiceTerms[q.correct]), termKey(expected));
-      assert.equal(new Set(choiceTerms.map(termKey)).size, 5);
-      assert.deepEqual(q.choices, choiceTerms.map(termText));
+      const expressions = choiceTerms.map((t, idx) => `${termKey(t)}:${q.data.choiceHasConstant[idx]}`);
+      assert.equal(new Set(expressions).size, 5);
+      assert.deepEqual(q.choices, choiceTerms.map((t, idx) => termText(t) + (q.data.choiceHasConstant[idx] ? ' + C' : '')));
       assert.equal(q.display.length, 2);
-      assert.ok(q.prompt.includes(id === 'bolt' ? "f′(x)" : '+ C'));
+      assert.ok(q.prompt.includes(id === 'bolt' ? "f′(x)" : 'dx = ?'));
+      if (id === 'heal') {
+        assert.ok(q.answer.endsWith(' + C'));
+        assert.equal(q.data.choiceHasConstant.filter(has => !has).length, 1);
+        assert.ok(q.choices.some((value, idx) => idx !== q.correct && value === termText(expected)));
+      } else {
+        assert.ok(q.data.choiceHasConstant.every(has => !has));
+      }
     }
   });
 }
@@ -58,7 +66,7 @@ test('가능한 모든 계수·차수 조합에서 오답이 중복되지 않고
         checkChoices(q);
         assert.equal(q.data.coefficient,coefficients[ci]);
         assert.equal(q.data.exponent,exponent.min+ni);
-        assert.equal(new Set(q.data.choiceTerms.map(termKey)).size,5);
+        assert.equal(new Set(q.data.choiceTerms.map((t,i) => `${termKey(t)}:${q.data.choiceHasConstant[i]}`)).size,5);
       }
     }
   }
@@ -86,4 +94,24 @@ test('기존 사칙연산·문제은행 확장 기능은 계속 동작한다', (
 
 test('단항식 설정에서 0만 있는 계수 범위는 거부한다', () => {
   assert.throws(()=>generateQuestion({kind:'monomialIntegral',coefficient:{min:0,max:0},exponent:{min:1,max:3},answerCount:5}),/사용 가능한 계수/);
+});
+
+test('부정적분에서 + C가 없는 정답 다항식은 반드시 오답이 된다', () => {
+  const spec = SPELLS.heal.problem;
+  for (let i = 0; i < 500; i++) {
+    const q = generateQuestion(spec);
+    const primitive = termText(q.data.answerTerm);
+    const omittedIndex = q.choices.indexOf(primitive);
+    assert.ok(omittedIndex !== -1);
+    assert.notEqual(omittedIndex, q.correct);
+    assert.equal(q.answer, `${primitive} + C`);
+    assert.equal(q.choices.filter(c => !c.endsWith(' + C')).length, 1);
+  }
+});
+
+test('설정으로 + C 누락 오답을 2개로 늘릴 수 있다', () => {
+  const q = generateQuestion({ ...SPELLS.heal.problem, omittedConstantDistractors: 2 });
+  checkChoices(q);
+  assert.equal(q.choices.filter(c => !c.endsWith(' + C')).length, 2);
+  assert.equal(q.choices[q.correct], q.answer);
 });

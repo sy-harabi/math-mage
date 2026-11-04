@@ -25,7 +25,7 @@ function castEnemy(e){if(mode!=='target')return;let prev=e.hp;e.hp=Math.max(0,e.
 function point(ev){let r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height}}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y}}
 function magicCenter(){const sx=p.x-camera.x,sy=p.y-camera.y;return {x:Math.max(210,Math.min(W-210,sx)),y:Math.max(195,Math.min(H-215,sy-35))}}
-C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<58 && Math.abs(t.y-m.y-pent[i].y)<32){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
+C.addEventListener('pointerdown',ev=>{ev.preventDefault();if(gameOver)return;const t=point(ev);if(mode==='question'){const m=magicCenter();for(let i=0;i<5;i++){if(Math.abs(t.x-m.x-pent[i].x)<72 && Math.abs(t.y-m.y-pent[i].y)<34){selectAnswer(i);return}}return}if(mode==='target'){const wp=worldPoint(t);const hit=enemies.filter(e=>Math.hypot(wp.x-e.x,wp.y-e.y)<e.r+20).sort((a,b)=>Math.hypot(wp.x-a.x,wp.y-a.y)-Math.hypot(wp.x-b.x,wp.y-b.y))[0];if(hit)castEnemy(hit);else say('적을 클릭하세요.');return}touchTarget=worldPoint(t)});
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' ','1','2','escape'].includes(k))e.preventDefault();keys.add(k);if(e.repeat)return;if(k==='1')begin('bolt');if(k==='2')begin('heal');if(k==='escape')cancel();if(k==='r'&&gameOver)reset()});window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());
 for(const name of ['bolt','heal','cancel','restart'])dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),cancel, restart:reset})[name]());
@@ -76,12 +76,12 @@ if(mode==='question'){
     fittedLabel(lines[0],m.x,m.y-23,232,29);
     fittedLabel(lines[1],m.x,m.y+17,220,30);
   }else fittedLabel(lines[0],m.x,m.y-4,230,30);
-  label(spell==='heal'?'부정적분 · +C 생략':'도함수',m.x,m.y+63,15,'#a7c8e5','500');
+  label(spell==='heal'?'부정적분 · +C 포함':'도함수',m.x,m.y+63,15,'#a7c8e5','500');
   // 분수·지수를 읽기 쉽도록 정답 버튼을 원 대신 넓은 타원형으로 표시한다.
   pts.forEach((v,i)=>{
-    ctx.beginPath();ctx.ellipse(v.x,v.y,55,28,0,0,TWO);
+    ctx.beginPath();ctx.ellipse(v.x,v.y,69,30,0,0,TWO);
     ctx.fillStyle='#234971';ctx.fill();ctx.strokeStyle='#b3d9ff';ctx.lineWidth=2.5;ctx.stroke();
-    fittedLabel(String(question.choices[i]),v.x,v.y,100,25);
+    fittedLabel(String(question.choices[i]),v.x,v.y,128,25);
   });
   label('정답을 클릭하세요',m.x,m.y+208,15,'#d5e6ff');
 }

@@ -144,27 +144,51 @@ function monomialQuestion(spec, rng, kind) {
   if (pool.length < count - 1) {
     throw new Error('오답 후보가 부족합니다. 문제 범위를 조정하세요.');
   }
+  // 부정적분에서는 적분상수 누락을 명시적인 오답 유형으로 취급한다.
+  // 원시함수의 다항식 부분이 정답과 같더라도 + C가 없으면 정답이 아니다.
+  const omittedC = isDerivative ? 0 : (spec.omittedConstantDistractors ?? 1);
+  if (!Number.isInteger(omittedC) || omittedC < (isDerivative ? 0 : 1) || omittedC >= count) {
+    throw new Error('omittedConstantDistractors는 1 이상, 보기 개수 미만이어야 합니다.');
+  }
   const selected = [];
-  while (selected.length < count - 1) {
+  while (selected.length < count - 1 - omittedC) {
     selected.push(...pool.splice(pickIndex(pool.length, rng), 1));
   }
+  const choicesWithMeaning = selected.map(value => ({ value, hasConstant: !isDerivative }));
+  if (!isDerivative) {
+    // 적어도 하나는 '정답 다항식, 단 + C 생략' — 개념적으로 분명한 오답.
+    choicesWithMeaning.push({ value: correctTerm, hasConstant: false });
+    for (let i = 1; i < omittedC; i++) {
+      choicesWithMeaning.push({ value: pool.splice(pickIndex(pool.length, rng), 1)[0], hasConstant: false });
+    }
+  }
+  // 적분상수를 빠뜨린 보기가 언제나 같은 꼭짓점에 놓이지 않도록 섞는다.
+  for (let i = choicesWithMeaning.length - 1; i > 0; i--) {
+    const j = pickIndex(i + 1, rng);
+    [choicesWithMeaning[i], choicesWithMeaning[j]] = [choicesWithMeaning[j], choicesWithMeaning[i]];
+  }
   const correct = pickIndex(count, rng);
-  const choiceTerms = [...selected];
-  choiceTerms.splice(correct, 0, correctTerm);
+  choicesWithMeaning.splice(correct, 0, { value: correctTerm, hasConstant: !isDerivative });
+  const asText = option => termText(option.value) + (option.hasConstant ? ' + C' : '');
   const prompt = isDerivative
     ? `f(x) = ${termText(term(a, 1, n))}, f′(x) = ?`
-    : `∫ ${termText(term(a, 1, n))} dx = ? + C`;
+    : `∫ ${termText(term(a, 1, n))} dx = ?`;
   const display = isDerivative
     ? [`f(x) = ${termText(term(a, 1, n))}`, 'f′(x) = ?']
-    : [`∫ ${termText(term(a, 1, n))} dx`, '= ? + C'];
+    : [`∫ ${termText(term(a, 1, n))} dx`, '= ?'];
   return {
     prompt,
     display,
-    answer: termText(correctTerm),
-    choices: choiceTerms.map(termText),
+    answer: asText(choicesWithMeaning[correct]),
+    choices: choicesWithMeaning.map(asText),
     correct,
-    // 테스트에서 실제 계수·차수를 직접 검증할 수 있도록 원본 식도 반환.
-    data: { coefficient: a, exponent: n, answerTerm: correctTerm, choiceTerms },
+    data: {
+      coefficient: a,
+      exponent: n,
+      answerTerm: correctTerm,
+      choiceTerms: choicesWithMeaning.map(option => option.value),
+      choiceHasConstant: choicesWithMeaning.map(option => option.hasConstant),
+    },
   };
 }
 
