@@ -8,7 +8,7 @@ import { updateRockSlime } from './rock-slime.js?v=1.9.0';
 import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js?v=1.8.1';
-import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.6.0';
+import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.9.2';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
@@ -154,6 +154,7 @@ function begin(which) {
 }
 function displayMathQuestion(keepChoices=false) {
   const integral=Boolean(integralSequence);
+  const leadingPlus=Boolean(boltSequence?.selectedTerms.length||integralSequence?.selectedTerms.length);
   dom.mathTitle.textContent=integral?'':
     boltSequence?'':'주문 완성';
   dom.mathProblem.innerHTML=integral?integralSequenceMathML(integralSequence,SPELLS[spell].name):boltSequence?boltSequenceMathML(boltSequence,SPELLS[spell].name):problemMathML(question,spell);
@@ -164,10 +165,11 @@ function displayMathQuestion(keepChoices=false) {
     question.choices.forEach((choice,index)=>{
       const button=document.createElement('button');
       button.type='button';button.className='math-choice';
-      button.setAttribute('aria-label',`${index+1}번: ${question.choices[index]}`);
+      const positive=question.data.choiceTermPolys[index]?.[0]?.num>0;
+      button.setAttribute('aria-label',`${index+1}번: ${leadingPlus&&positive?'+':''}${choice}`);
       const key=document.createElement('span');key.className='answer-key';key.textContent=String(index+1);
       const formula=document.createElement('span');formula.className='answer-formula';
-      formula.innerHTML=integral?integralChoiceMathML(question,index):polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index]);
+      formula.innerHTML=integral?integralChoiceMathML(question,index,leadingPlus):polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index],leadingPlus);
       button.append(key,formula);
       button.addEventListener('click',()=>selectAnswer(index));
       dom.mathAnswers.append(button);

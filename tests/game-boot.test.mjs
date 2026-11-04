@@ -16,7 +16,7 @@ function makeElement(id) {
   return {
     id,hidden:false,style:{},dataset:{},children:[],textContent:'',innerHTML:'',disabled:false,
     classList:{add(){},remove(){},toggle(){}},
-    setAttribute(){},
+    attributes:{},setAttribute(name,value){this.attributes[name]=value;},
     setPointerCapture(){},
     append(...items){this.children.push(...items);},
     replaceChildren(...items){this.children=[...items];},
@@ -25,6 +25,18 @@ function makeElement(id) {
     getBoundingClientRect(){return {x:0,y:0,left:0,top:0,width:960,height:600};},
     _listeners:listeners,
   };
+}
+
+function assertChoiceSigns(nodes,stage,afterFirst){
+  nodes.forEach((node,index)=>{
+    const term=(stage.terms||stage.choiceTerms)[index];
+    const markup=node.children[1].innerHTML;
+    const plus=afterFirst&&term?.num>0;
+    assert.equal(node.attributes['aria-label'],`${index+1}번: ${plus?'+':''}${stage.choices[index]}`);
+    if(term?.num>0)assert.equal(/<mrow><mo>\+<\/mo>/.test(markup),afterFirst);
+    else if(term?.num<0){assert.match(markup,/<mrow><mo>−<\/mo>/);assert.doesNotMatch(markup,/<mo>\+<\/mo><mo>−<\/mo>/);}
+    else if(stage.choiceKinds?.[index]==='constant')assert.match(markup,/<mrow><mo>\+<\/mo><mi>C<\/mi>/);
+  });
 }
 
 test('debug stage buttons jump safely through stages 1–7, keep the build, and remain disabled in normal play',async()=>{
@@ -249,6 +261,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
         assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level+1}"`));
         assert.doesNotMatch(get('math-problem').innerHTML,/<msubsup>/);
         const nodes=[...get('math-answers').children];
+        assertChoiceSigns(nodes,expected.stages[i],i>0);
         if(previousNodes)assert.ok(nodes.every((n,index)=>n!==previousNodes[index]),'runes are replaced after every answer');
         if(i===level)assert.match(nodes[expected.correctIndices[i]].children[1].innerHTML,/<mi>C<\/mi>/);
         assert.doesNotMatch(get('math-problem').innerHTML,/□|왼쪽|실패/);
@@ -349,6 +362,7 @@ test('bolt event flow refreshes five runes after each term, assembles every rank
         assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level}"`));
         const nodes=[...get('math-answers').children];
         const formulas=nodes.map(n=>n.children[1].innerHTML);
+        assertChoiceSigns(nodes,expected.stages[i],i>0);
         assert.equal(nodes.length,5);
         if(previousNodes){
           assert.ok(nodes.every((n,index)=>n!==previousNodes[index]));
@@ -423,6 +437,7 @@ test('shield key 3 casts every derivative rank and blocks real overlapping melee
       assert.match(get('math-problem').innerHTML,/aria-label="보호막"/);
       for(let i=0;i<rank;i++){
         assert.equal(get('shield-count').textContent,0);
+        assertChoiceSigns(get('math-answers').children,expected.stages[i],i>0);
         get('math-answers').children[expected.correctIndices[i]].click();
         assert.equal(get('math-cast-hud').hidden,i===rank-1);
       }
@@ -474,6 +489,7 @@ test('healing uses refreshed fireball-style integral runes, requires +C, and hea
       let previous=null;
       for(let i=0;i<rank;i++){
         const nodes=[...get('math-answers').children];
+        assertChoiceSigns(nodes,expected.stages[i],i>0);
         if(previous)assert.ok(nodes.every((node,index)=>node!==previous[index]));
         nodes[expected.correctIndices[i]].click();previous=nodes;
         assert.equal(get('math-cast-hud').hidden,false,'healing cannot finish before +C');

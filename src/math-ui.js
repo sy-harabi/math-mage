@@ -17,10 +17,10 @@ function termMarkup(term) {
     : `<mfrac>${mn(numerator)}${mn(term.den)}</mfrac>`;
   return coeff + variable;
 }
-export function polynomialMathML(terms, includeC = false) {
+export function polynomialMathML(terms, includeC = false, leadingPlus = false) {
   const ordered = normalizePolynomial(terms);
   const pieces = ordered.length ? ordered.map((t,i) =>
-    `${t.num<0?mo('−'):i?mo('+'):''}${termMarkup(t)}`).join('') : mn(0);
+    `${t.num<0?mo('−'):i||leadingPlus?mo('+'):''}${termMarkup(t)}`).join('') : mn(0);
   return math(pieces + (includeC ? `${mo('+')}${mi('C')}` : ''));
 }
 export function problemMathML(q, spell) {
@@ -69,7 +69,7 @@ export function integralSequenceMathML(sequence,spellName='파이어볼') {
 }
 
 /** +C is its own final rune; never render it as 0+C. */
-export function integralChoiceMathML(question,index) {
+export function integralChoiceMathML(question,index,leadingPlus=false) {
   return question.data.choiceKinds[index]==='constant'?math(`${mo('+')}${mi('C')}`):
-    polynomialMathML(question.data.choiceTermPolys[index]);
+    polynomialMathML(question.data.choiceTermPolys[index],false,leadingPlus);
 }
