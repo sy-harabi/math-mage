@@ -9,6 +9,7 @@ import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultipl
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
 import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
+import { guardUpgradeButton } from './upgrade-input.js';
 
 (() => {
 'use strict';
@@ -183,7 +184,8 @@ function openUpgrade() {
     const small=document.createElement('small');
     const next=option.id==='bolt'?` → Lv${p.levels.bolt+1}`:option.id==='heal'?` → Lv${p.levels.heal+1}`:'';
     small.textContent=option.description+next;
-    btn.append(strong,small);btn.addEventListener('click',()=>selectUpgrade(option.id));
+    btn.append(strong,small);
+    guardUpgradeButton(btn,()=>selectUpgrade(option.id));
     dom.upgradeOptions.append(btn);
   }
   dom.upgradeOverlay.hidden=false;
