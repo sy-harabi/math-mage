@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>계산 마법사 — Neon Ritual</title>
-<link rel="stylesheet" href="./src/styles.css?v=1.8.0">
+<link rel="stylesheet" href="./src/styles.css?v=1.8.1">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -15,11 +15,11 @@
 <header class="game-header">
   <div class="hero-hud"><svg class="mage-portrait" aria-hidden="true"><use href="#icon-mage"/></svg><div class="hero-vitals"><div class="hero-level">Lv. <b id="character-level">1</b><span class="shield-label">방어막 <b id="shield-count">0</b></span></div><div class="health-track" role="meter" id="health-meter" aria-label="체력" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="health-fill"></div><b id="health-label">100 / 100</b></div></div></div>
   <div class="run-clock"><span>TIME</span><b id="run-time">00:00.00</b></div>
-  <div class="game-brand"><h1>계산 마법사</h1><small>NEON RITUAL · v1.8.0</small></div>
+  <div class="game-brand"><h1>계산 마법사</h1><small>NEON RITUAL · v1.8.1</small></div>
 </header>
 <div id="stage"><canvas id="game" width="960" height="600" aria-label="계산 마법사 게임"></canvas><div id="toast" role="status">1 번개 · 2 파이어볼 · 3 보호막 · 4 힐 · WASD 이동</div><div id="slow"></div>
 <div id="upgrade-overlay" class="game-overlay" hidden>
-  <div class="overlay-panel"><h2 id="upgrade-heading">레벨업</h2><p>스킬 습득 또는 강화 하나를 선택하세요. 전투가 정지됩니다.</p><div id="upgrade-options" class="upgrade-options"></div></div>
+  <div class="overlay-panel upgrade-panel"><h2 id="upgrade-heading">레벨업</h2><p>원하는 성장을 선택하세요. 선택 중에는 전투와 기록이 정지됩니다.</p><div id="upgrade-options" class="upgrade-options"></div></div>
 </div>
 <div id="math-cast-hud" class="math-cast-hud" hidden aria-label="오각형 마법진에서 정답 선택">
   <div id="rune-frame" class="rune-frame">
@@ -59,4 +59,5 @@
 <div id="shield-level-picker" class="debug-level-picker" role="group" hidden aria-label="보호막 스킬 레벨 체험"><strong>보호막 레벨 체험</strong><button type="button" data-shield-level="1">Lv1 · 1회 방어</button><button type="button" data-shield-level="2">Lv2 · 2회 방어</button><button type="button" data-shield-level="3">Lv3 · 3회 방어</button></div>
 <div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 </div>
-<script type="module" src="./src/game.js?v=1.8.0-laser-warning-rails-1"></script></body></html>
+<script type="module" src="./src/game.js?v=1.8.1"></script></body></html>
+

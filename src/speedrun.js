@@ -1,4 +1,4 @@
-/** Real time, including upgrade selection and spell slowdown. Hidden tabs are paused. */
+/** Real combat time, including spell solving/slowdown. Upgrade selection and hidden tabs are paused. */
 export function createRunTimer() {
   return {elapsedSeconds: 0, finished: false};
 }
@@ -23,3 +23,4 @@ export function formatRunTime(seconds) {
   const secs = Math.floor((centiseconds % 6000) / 100);
   return `${String(minutes).padStart(2,'0')}:${String(secs).padStart(2,'0')}.${String(centiseconds % 100).padStart(2,'0')}`;
 }
+

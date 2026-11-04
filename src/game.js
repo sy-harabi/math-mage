@@ -5,10 +5,11 @@ import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=enemy-balance-2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.0';
-import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.1';
+import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js?v=1.8.1';
 import { polynomialMathML, problemMathML, boltSequenceMathML, integralSequenceMathML, integralChoiceMathML } from './math-ui.js?v=1.6.0';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
+import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
@@ -244,12 +245,7 @@ function openUpgrade() {
   dom.upgradeHeading.textContent=`캐릭터 Lv${progression.level} · 성장 선택`;
   dom.upgradeOptions.replaceChildren();
   for(const option of currentChoices){
-    const btn=document.createElement('button');btn.type='button';btn.className='upgrade-option';
-    const strong=document.createElement('strong');strong.textContent=option.title;
-    const small=document.createElement('small');
-    const next=SKILL_IDS.includes(option.id)?` → Lv${(p.levels[option.id]??0)+1}`:'';
-    small.textContent=option.description+next;
-    btn.append(strong,small);
+    const btn=createUpgradeCard(option);
     guardUpgradeButton(btn,()=>selectUpgrade(option.id));
     dom.upgradeOptions.append(btn);
   }
@@ -608,7 +604,7 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='victory');
+    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='victory'&&mode!=='upgrade');
     tick(Math.min(.05,rawDt));updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
@@ -617,3 +613,4 @@ if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).obser
 else window.addEventListener('resize',updateRuneScale);
 updateRuneScale();reset();requestAnimationFrame(loop);
 })();
+

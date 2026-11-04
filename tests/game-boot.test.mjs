@@ -171,13 +171,23 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
     frame(701);assert.equal(get('kills').textContent,2);assert.equal(get('xp-label').textContent,'0/18');
     assert.equal(get('character-level').textContent,2);
     assert.equal(get('upgrade-overlay').hidden,false);
-    const learn=get('upgrade-options').children.find(button=>button.children[0].textContent==='보호막 습득');
-    assert.ok(learn);assert.match(learn.children[1].textContent,/→ Lv1/);
+    const learn=get('upgrade-options').children.find(button=>button.dataset.upgradeId==='shield');
+    assert.ok(learn);assert.equal(learn.children[0].children[1].textContent,'Lv1 습득');
+    const pausedTime=get('run-time').textContent;
+    const pausedXp=get('xp-label').textContent;
+    frame(10701);frame(20701);
+    assert.equal(get('run-time').textContent,pausedTime,'twenty seconds spent choosing are excluded');
+    assert.equal(get('xp-label').textContent,pausedXp);
     learn._listeners.get('click')({detail:0});
-    frame(751);assert.equal(get('upgrade-overlay').hidden,true);
+    frame(20751);
+    assert.notEqual(get('run-time').textContent,pausedTime,'the run timer resumes after selecting');
+assert.equal(get('upgrade-overlay').hidden,true);
     assert.equal(get('shield').disabled,false);assert.equal(get('shield-state').textContent,'Lv1 · 준비');
     key('3');assert.equal(get('math-cast-hud').hidden,false);
     assert.equal(get('math-cast-hud').dataset.terms,'1');
+    const solvingStart=get('run-time').textContent;
+    frame(30751);
+    assert.notEqual(get('run-time').textContent,solvingStart,'spell solving remains part of the run time');
     get('restart').click();
     for(const id of ['heal','fireball','shield']){
       assert.equal(get(id).disabled,true);assert.equal(get(id+'-state').textContent,'미습득');
