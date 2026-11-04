@@ -176,8 +176,9 @@ test('bolt event flow keeps five runes, assembles every rank, and fails immediat
       key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
       assert.equal(get('rune-frame').style.left,left);
       for(let i=0;i<level;i++){
-        assert.match(get('math-title').textContent,new RegExp(`${i+1}/${level}`));
-        assert.equal((get('math-problem').innerHTML.match(/□/g)??[]).length,level-i);
+        assert.equal(get('math-title').textContent,'');
+        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuenow="${i}"`));
+        assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level}"`));
         if(i%2)key(String(expected.correctIndices[i]+1));else nodes[expected.correctIndices[i]].click();
         assert.deepEqual(get('math-answers').children,nodes);
         assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
@@ -200,7 +201,8 @@ test('bolt event flow keeps five runes, assembles every rank, and fails immediat
     get('restart').click();debug.click();key('1');key('Escape');
     assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/마법 취소/);
     get('restart').click();debug.click();key('1');
-    assert.match(get('math-title').textContent,/1\/3/);
-    assert.equal((get('math-problem').innerHTML.match(/□/g)??[]).length,3);
+    assert.equal(get('math-title').textContent,'');
+    assert.match(get('math-problem').innerHTML,/aria-valuenow="0"/);
+    assert.match(get('math-problem').innerHTML,/aria-valuemax="3"/);
   }finally{Math.random=random;}
 });

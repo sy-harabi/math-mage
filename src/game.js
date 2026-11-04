@@ -7,7 +7,7 @@ import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComple
 import { createProgression, addXp, xpToNext } from './progression.js';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.4.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
-import { polynomialMathML, problemMathML, boltSequenceMathML } from './math-ui.js?v=bolt-terms-1';
+import { polynomialMathML, problemMathML, boltSequenceMathML } from './math-ui.js?v=bolt-visual-1';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
@@ -77,7 +77,7 @@ function reset() {
   pointer=null;
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
   cameraUpdate(); startRun();
-  say('1 번개 · 2 힐 · 3 파이어볼 · 몬스터 처치로 XP 획득',3); updateUI();
+  say('',0); updateUI();
 }
 function startRun() {
   // Internal phases control enemy spawns, but are never displayed or paused.
@@ -122,12 +122,12 @@ function begin(which) {
   boltSequence=which==='bolt'?generateBoltSequence(activeCastConfig.problem):null;
   question=boltSequence?boltSequence.question:conceptSequence?conceptSequence.questions[0]:generateQuestion(activeCastConfig.problem);mode='question';
   displayMathQuestion();
-  say(which==='fireball'?'빈칸을 완성하세요. 한 번 틀리면 주문 실패!':which==='bolt'?'왼쪽 항부터 도함수를 조합하세요. 한 번 틀리면 주문 실패!':'부정적분을 구하세요.',2);
+  say(which==='fireball'?'빈칸을 완성하세요. 한 번 틀리면 주문 실패!':which==='bolt'?'':'부정적분을 구하세요.',2);
 }
 function displayMathQuestion(keepChoices=false) {
   const concept=spell==='fireball';
   dom.mathTitle.textContent=concept?`파이어볼 · ${conceptSequence.index+1}/${conceptSequence.questions.length} · ${question.name}`:
-    boltSequence?`번개 · 항 조합 ${boltSequence.index+1}/${boltSequence.correctIndices.length}`:'주문 완성';
+    boltSequence?'':'주문 완성';
   dom.mathProblem.innerHTML=concept?question.html:boltSequence?boltSequenceMathML(boltSequence):problemMathML(question,spell);
   dom.mathHud.dataset.terms=concept?'concept':String(question.data.inputTerms.length);
   dom.mathHud.dataset.spell=spell;
@@ -591,7 +591,7 @@ function updateUI(){
   }
   dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
   dom.status.textContent=mode==='upgrade'?'레벨업 · 강화 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
-    mode==='question'?'마법진: 정답 선택':mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
+    mode==='question'?(spell==='bolt'?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
     `번개 Lv${p.levels.bolt} / 힐 Lv${p.levels.heal} / 파이어볼 Lv${p.levels.fireball}`;
   if(DEBUG){for(const which of ['bolt','heal','fireball']){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){

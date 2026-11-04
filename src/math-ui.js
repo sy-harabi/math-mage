@@ -39,14 +39,17 @@ export function boltSequenceMathML(sequence) {
   const { question, selectedTerms, index } = sequence;
   const input = question.data.inputTerms.map((t, i) => {
     const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
-    return i === sequence.sourceIndices[index] ? `<mstyle class="bolt-current-term" mathcolor="#ffe17c">${body}</mstyle>` : body;
+    const active = i === sequence.sourceIndices[index];
+    const done = sequence.sourceIndices.slice(0, index).includes(i);
+    return `<mstyle class="bolt-source-term${active ? ' bolt-current-term' : done ? ' is-done' : ''}" mathcolor="${active ? '#ffe17c' : done ? '#738ca5' : '#d8e6f4'}">${body}</mstyle>`;
   }).join('');
-  const result = sequence.correctIndices.map((_, i) => {
-    const t = selectedTerms[i];
-    return t ? `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}` :
-      `${i ? mo('+') : ''}${mo('□')}`;
+  const result = selectedTerms.map((t, i) => {
+    const body = `${t.num < 0 ? mo('−') : i ? mo('+') : ''}${termMarkup(t)}`;
+    return `<mstyle class="bolt-formed-term${i === selectedTerms.length - 1 ? ' is-new' : ''}">${body}</mstyle>`;
   }).join('');
-  return math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`) +
-    math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result}`) +
-    '<span class="bolt-build-hint">왼쪽 항부터 선택 · 한 번 틀리면 실패</span>';
+  const charge = sequence.correctIndices.map((_, i) =>
+    `<span class="bolt-step${i < index ? ' is-filled' : i === index ? ' is-current' : ''}"></span>`).join('');
+  return `<div class="bolt-charge" role="progressbar" aria-label="번개" aria-valuemin="0" aria-valuemax="${sequence.correctIndices.length}" aria-valuenow="${index}">${charge}</div>` +
+    `<div class="bolt-source">${math(`${mi('f')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${input}`)}</div>` +
+    `<div class="bolt-answer${selectedTerms.length ? '' : ' is-empty'}">${math(`${mi('f')}${mo('′')}${mo('(')}${mi('x')}${mo(')')}${mo('=')}${result || '<mspace width="1.5em"/>'}`)}</div>`;
 }

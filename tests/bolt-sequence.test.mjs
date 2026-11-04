@@ -48,7 +48,7 @@ test('constant terms disappear and progress follows the remaining derivative ter
     assert.equal(sequence.question.data.inputTerms.length,termCount);
     assert.equal(sequence.correctIndices.length,termCount-1);
     assert.equal(sequence.question.choices.length,5);
-    assert.equal((boltSequenceMathML(sequence).match(/□/g)??[]).length,termCount-1);
+    assert.match(boltSequenceMathML(sequence),new RegExp(`aria-valuemax="${termCount-1}"`));
     for(let i=0;i<termCount-1;i++){
       assert.equal(sequence.question.data.inputTerms[sequence.sourceIndices[i]].power,termCount-1-i);
       assert.equal(answerBolt(sequence,sequence.correctIndices[i]),i===termCount-2?'complete':'next');
@@ -70,15 +70,19 @@ test('constant functions finish with a single 0 rune and never create a negative
   }
 });
 
-test('central MathML appends signed terms and removes one blank after each correct rune',()=>{
+test('central MathML appends signed terms and advances visual charge without placeholder boxes',()=>{
   const sequence=generateBoltSequence({...getSpellAtLevel('bolt',3).problem,
     coefficient:{min:-5,max:-1}},seeded(7));
   const before=boltSequenceMathML(sequence);
-  assert.equal((before.match(/□/g)??[]).length,3);
+  assert.doesNotMatch(before,/□|왼쪽 항부터|한 번 틀리면/);
+  assert.match(before,/aria-valuenow="0"/);
+  assert.match(before,/aria-valuemax="3"/);
   assert.match(before,/bolt-current-term/);
   answerBolt(sequence,sequence.question.correct);
   const after=boltSequenceMathML(sequence);
-  assert.equal((after.match(/□/g)??[]).length,2);
+  assert.doesNotMatch(after,/□/);
+  assert.match(after,/aria-valuenow="1"/);
+  assert.match(after,/bolt-step is-filled/);
   assert.match(after,/<mo>−<\/mo>/);
   assert.notEqual(after,before);
 });

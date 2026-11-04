@@ -85,8 +85,26 @@
 .math-cast-hud[data-terms="2"] .math-problem math{font-size:16px}
 .math-cast-hud[data-terms="3"] .math-problem math{font-size:18.2px}
 .math-hint{font-size:10px;color:#bcd7f2}
-.bolt-current-term{color:#ffe17c}
-.bolt-build-hint{font-size:10px;color:#ffe5a1;white-space:nowrap}
+/* Lightning communicates charge through light and the growing formula. */
+#toast:empty{display:none}
+.math-cast-hud[data-spell="bolt"] .math-hud-title,
+.math-cast-hud[data-spell="bolt"] .math-hint{display:none}
+.math-cast-hud[data-spell="bolt"] .math-problem{gap:15px}
+.bolt-current-term{color:#ffe17c;text-shadow:0 0 12px #ffce6359}
+.bolt-source-term.is-done{color:#738ca5}
+.bolt-charge{display:flex;align-items:center;justify-content:center;gap:10px;height:14px}
+.bolt-step{width:9px;height:9px;border-radius:50%;background:#28445b;border:1px solid #56758c;transition:background .15s,box-shadow .15s}
+.bolt-step.is-current{background:#ffe7a6;border-color:#fff2c9;box-shadow:0 0 0 4px #f8cf5e18,0 0 13px #ffd97788}
+.bolt-step.is-filled{background:#efbf58;border-color:#f9d984;box-shadow:0 0 9px #ffd97744}
+.bolt-answer{position:relative;min-height:40px;display:flex;align-items:center;justify-content:center;color:#ffe6a1}
+.bolt-answer::after{content:'';position:absolute;bottom:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,#e7c67a99,transparent)}
+.bolt-answer.is-empty::after{animation:bolt-breathe 1.8s ease-in-out infinite}
+.math-cast-hud[data-spell="bolt"] .bolt-answer math{font-size:23px;color:#ffe6a1}
+.math-cast-hud[data-spell="bolt"] .answer-formula math{font-size:21px}
+.bolt-formed-term.is-new{animation:bolt-form .22s ease-out}
+@keyframes bolt-breathe{50%{opacity:.3}}
+@keyframes bolt-form{from{opacity:.3}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.bolt-answer.is-empty::after,.bolt-formed-term.is-new{animation:none}}
 .math-answers{position:absolute;inset:0;pointer-events:none}
 .math-choice{
   position:absolute;width:204px;height:66px;min-height:0;
