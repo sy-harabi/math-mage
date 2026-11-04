@@ -4,7 +4,7 @@ import { createProgression, xpForLevel, addXp, xpToNext } from '../src/progressi
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from '../src/stage-director.js';
 import { ENEMY_TYPES, createEnemy } from '../src/enemy-types.js';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from '../src/spawn-director.js';
-import { selectUpgradeChoices, applyUpgrade, cooldownMultiplier, movementMultiplier, questionTimeMultiplier, availableUpgrades } from '../src/upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, cooldownMultiplier, movementMultiplier, questionTimeMultiplier, worldTimeMultiplier, availableUpgrades } from '../src/upgrades.js';
 import { SPELLS, getSpellAtLevel } from '../src/spells.js';
 import { generateQuestion } from '../src/problem-engine.js';
 
@@ -132,4 +132,18 @@ test('5스테이지 이후에도 최대 동시 개체 수 제한을 스폰 설�
     assert.equal(cfg.maxEnemies,undefined);
   }
   assert.equal(stageSpawnConfig(15).interval,2);
+});
+
+test('time warp: no slow at start, only during solving after upgrades, never while targeting',()=>{
+  const p=mockPlayer();
+  assert.equal(worldTimeMultiplier('idle',p),1);
+  assert.equal(worldTimeMultiplier('question',p),1);
+  assert.equal(worldTimeMultiplier('target',p),1);
+  assert.ok(applyUpgrade(p,'timeWarp'));
+  assert.ok(Math.abs(worldTimeMultiplier('question',p)-.85)<1e-12);
+  assert.equal(worldTimeMultiplier('target',p),1);
+  assert.equal(worldTimeMultiplier('idle',p),1);
+  for(let i=0;i<3;i++)assert.ok(applyUpgrade(p,'timeWarp'));
+  assert.ok(Math.abs(worldTimeMultiplier('question',p)-.4)<1e-12);
+  assert.equal(worldTimeMultiplier('target',p),1);
 });

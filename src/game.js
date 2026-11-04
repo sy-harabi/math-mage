@@ -5,7 +5,7 @@ import { ENEMY_TYPES, createEnemy } from './enemy-types.js';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, questionTimeMultiplier } from './upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 
 (() => {
@@ -277,7 +277,7 @@ function tick(dt) {
     if(transitionTimer<=0){mode='idle';startStage(stage.number+1);checkMilestones();}
     return;
   }
-  const wd=dt*(mode==='question'?questionTimeMultiplier(p):1);
+  const wd=dt*worldTimeMultiplier(mode,p);
   p.inv=Math.max(0,p.inv-wd);
   p.failSlow=Math.max(0,p.failSlow-dt);
   for(const key of ['bolt','heal'])p.cd[key]=Math.max(0,p.cd[key]-dt);
@@ -494,9 +494,10 @@ function updateUI(){
   dom.characterLevel.textContent=progression.level;
   dom.xpLabel.textContent=`${xp.current}/${xp.required}`;
   dom.xpFill.style.width=Math.min(100,xp.current/xp.required*100)+'%';
-  const qSpeed=questionTimeMultiplier(p);
-  dom.slow.style.display=mode==='question'&&qSpeed<1?'block':'none';
-  dom.slow.textContent=`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`;
+  const qSpeed=worldTimeMultiplier(mode,p);
+  const showTimeWarp=mode==='question'&&qSpeed<1;
+  dom.slow.style.display=showTimeWarp?'block':'none';
+  dom.slow.textContent=showTimeWarp?`풀이 중 세계 속도 ×${qSpeed.toFixed(2)}`:'';
   for(const k of ['bolt','heal']){
     const ready=p.cd[k]<=0,cdTotal=SPELLS[k].cooldownSeconds*cooldownMultiplier(p);
     const fill=100*clamp(1-p.cd[k]/cdTotal,0,1);
