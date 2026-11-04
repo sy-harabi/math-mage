@@ -170,7 +170,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
   }finally{Math.random=random;}
 });
 
-test('bolt event flow keeps five runes, assembles every rank, and fails immediately at any step',async()=>{
+test('bolt event flow refreshes five runes after each term, assembles every rank, and fails immediately at any step',async()=>{
   const {generateBoltSequence}=await import('../src/bolt-sequence.js');
   const {getSpellAtLevel}=await import('../src/spells.js');
   const elements=new Map();
@@ -190,9 +190,7 @@ test('bolt event flow keeps five runes, assembles every rank, and fails immediat
     for(let level=1;level<=3;level++){
       get('restart').click();debug.dataset.boltLevel=String(level);debug.click();get('bolt').click();
       const expected=generateBoltSequence(getSpellAtLevel('bolt',level).problem,()=>.25);
-      const nodes=[...get('math-answers').children];
-      const formulas=nodes.map(n=>n.children[1].innerHTML);
-      assert.equal(nodes.length,5);
+      let previousNodes=null,previousFormulas=null;
       const left=get('rune-frame').style.left;
       key('d');frame(1);frame(51);listeners.get('keyup')({key:'d'});
       assert.equal(get('rune-frame').style.left,left);
@@ -200,9 +198,15 @@ test('bolt event flow keeps five runes, assembles every rank, and fails immediat
         assert.equal(get('math-title').textContent,'');
         assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuenow="${i}"`));
         assert.match(get('math-problem').innerHTML,new RegExp(`aria-valuemax="${level}"`));
+        const nodes=[...get('math-answers').children];
+        const formulas=nodes.map(n=>n.children[1].innerHTML);
+        assert.equal(nodes.length,5);
+        if(previousNodes){
+          assert.ok(nodes.every((n,index)=>n!==previousNodes[index]));
+          assert.notDeepEqual(formulas,previousFormulas);
+        }
         if(i%2)key(String(expected.correctIndices[i]+1));else nodes[expected.correctIndices[i]].click();
-        assert.deepEqual(get('math-answers').children,nodes);
-        assert.deepEqual(nodes.map(n=>n.children[1].innerHTML),formulas);
+        previousNodes=nodes;previousFormulas=formulas;
         assert.equal(get('math-cast-hud').hidden,i===level-1);
       }
       assert.match(get('toast').textContent,/번개를 맞힐 적/);
@@ -211,8 +215,8 @@ test('bolt event flow keeps five runes, assembles every rank, and fails immediat
     for(let position=0;position<3;position++){
       get('restart').click();debug.dataset.boltLevel='3';debug.click();key('1');
       const expected=generateBoltSequence(getSpellAtLevel('bolt',3).problem,()=>.25);
+      for(let i=0;i<position;i++)get('math-answers').children[expected.correctIndices[i]].click();
       const nodes=[...get('math-answers').children];
-      for(let i=0;i<position;i++)nodes[expected.correctIndices[i]].click();
       nodes[(expected.correctIndices[position]+1)%5].click();
       assert.equal(get('math-cast-hud').hidden,true);assert.match(get('toast').textContent,/오답/);
       key('Backspace');nodes[expected.correctIndices[position]].click();

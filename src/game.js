@@ -14,7 +14,7 @@ import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
 import { pickEnemyAt } from './targeting.js';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.5.1';
-import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.1';
+import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 
 (() => {
 'use strict';
@@ -163,7 +163,7 @@ function selectAnswer(index) {
   if(mode!=='question')return;
   if(boltSequence){
     const result=answerBolt(boltSequence,index);
-    if(result==='next'){displayMathQuestion(true);return;}
+    if(result==='next'){displayMathQuestion();return;}
     if(result==='inactive')return;
   }
   if(integralSequence){

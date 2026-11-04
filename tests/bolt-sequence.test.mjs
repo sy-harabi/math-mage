@@ -8,18 +8,22 @@ import { boltSequenceMathML } from '../src/math-ui.js';
 
 function seeded(seed) { return () => ((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296); }
 
-test('all bolt ranks assemble exact derivatives from five fixed unique single-term runes',()=>{
+test('all bolt ranks assemble exact derivatives while refreshing five unique single-term runes after every answer',()=>{
   for(let level=1;level<=3;level++)for(let seed=0;seed<250;seed++){
     const sequence=generateBoltSequence(getSpellAtLevel('bolt',level).problem,seeded(seed));
-    const q=sequence.question,choices=q.choices;
-    assert.equal(choices.length,5);
+    const q=sequence.question;
+    assert.equal(q.choices.length,5);
     assert.equal(new Set(q.data.choiceTerms.map(termKey)).size,5);
     assert.ok(q.data.choiceTermPolys.every(poly=>poly.length===1));
     assert.equal(sequence.correctIndices.length,level);
     for(let i=0;i<level;i++){
+      const choices=q.choices;
+      assert.equal(choices.length,5);
+      assert.equal(new Set(q.data.choiceTerms.map(termKey)).size,5);
+      assert.equal(q.answer,q.choices[q.correct]);
       assert.equal(q.correct,sequence.correctIndices[i]);
       assert.equal(answerBolt(sequence,q.correct),i===level-1?'complete':'next');
-      assert.strictEqual(q.choices,choices);
+      if(i<level-1){assert.notStrictEqual(q.choices,choices);assert.notDeepEqual(q.choices,choices);}
       assert.equal(sequence.selectedTerms.length,i+1);
     }
     assert.equal(sequence.complete,true);
@@ -28,7 +32,7 @@ test('all bolt ranks assemble exact derivatives from five fixed unique single-te
   }
 });
 
-test('wrong first, middle or last rune irreversibly fails; out-of-order correct terms also fail',()=>{
+test('wrong first, middle or last rune irreversibly fails after any deck refresh',()=>{
   for(let position=0;position<3;position++){
     const sequence=generateBoltSequence(getSpellAtLevel('bolt',3).problem,seeded(position));
     for(let i=0;i<position;i++)assert.equal(answerBolt(sequence,sequence.correctIndices[i]),'next');
@@ -37,8 +41,6 @@ test('wrong first, middle or last rune irreversibly fails; out-of-order correct 
     assert.equal(sequence.failed,true);assert.equal(sequence.complete,false);
     assert.equal(answerBolt(sequence,sequence.correctIndices[position]),'inactive');
   }
-  const sequence=generateBoltSequence(getSpellAtLevel('bolt',3).problem,seeded(42));
-  assert.equal(answerBolt(sequence,sequence.correctIndices[1]),'failed');
 });
 
 test('constant terms disappear and progress follows the remaining derivative terms',()=>{
