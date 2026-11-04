@@ -127,15 +127,17 @@
 .math-cast-hud[data-spell="fireball"] .rune-pentagon{stroke:#ffa86f;filter:drop-shadow(0 0 5px #ff7e4899)}
 .math-cast-hud[data-spell="fireball"] .rune-star{stroke:#ffad8190}
 .math-cast-hud[data-spell="fireball"] .rune-inner{stroke:#ffc18eaa;fill:#1e1726e0}
-.math-cast-hud[data-spell="fireball"] .math-choice{border-color:#ffb282;background:#53352ee8}
+.math-cast-hud[data-spell="fireball"] .math-choice{width:190px;border-color:#ffb282;background:#53352ee8}
+.math-cast-hud[data-spell="fireball"] .math-choice:nth-child(2){left:85%}
+.math-cast-hud[data-spell="fireball"] .math-choice:nth-child(5){left:15%}
 .math-cast-hud[data-spell="fireball"] .math-choice:hover{background:#855039;border-color:#ffe1b7}
-.math-cast-hud[data-spell="fireball"] .rune-core{width:290px;gap:5px}
-.math-cast-hud[data-spell="fireball"] .math-hud-title{max-width:265px;font-size:11px;letter-spacing:0;color:#ffd2ae}
-.math-cast-hud[data-spell="fireball"] .math-problem{display:block;font-size:14px;line-height:1.7}
+.math-cast-hud[data-spell="fireball"] .rune-core{width:220px;gap:4px}
+.math-cast-hud[data-spell="fireball"] .math-hud-title{max-width:220px;font-size:11px;letter-spacing:0;color:#ffd2ae}
+.math-cast-hud[data-spell="fireball"] .math-problem{display:block;font-size:13px;line-height:1.6}
 .concept-line{min-height:24px}
 .concept-assumption{font-size:12px;line-height:1.2;color:#d1bba8}
 .concept-assumption math{font-size:13px}
-.concept-line math{display:inline-block;vertical-align:middle;font-size:16px;max-width:100%}
+.concept-line math{display:inline-block;vertical-align:middle;font-size:15px;max-width:100%}
 .concept-blank{display:inline-block;min-width:32px;padding:0 5px;border:1px solid #ffc68a;border-radius:5px;background:#a354303b;color:#ffe2a8;font-weight:800}
 .concept-fraction{display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;line-height:1.45;margin:3px 4px;text-align:center}
 .concept-fraction>span:first-child{border-bottom:1px solid #e8d9cc;padding:0 4px 2px}

@@ -66,9 +66,9 @@ export const CONCEPTS = [
     line(S('limit','limf',['limf','f′(a)','f′(x)','F′(x)','F(x)']), math(E), S('value','f(a)'), '이다.'),
   ], extraSlots: [S('approach','a',['a','b','h','x','0','1'])] },
   { id:'intermediate', name:'중간값 정리', lines:[
-    line(math(mi('f')), '가 양 끝점을 포함한 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), '이고'),
+    line(math(mi('f')), '가 닫힌구간 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), '이고'),
     line(math(`${f('a')}${mo('&lt;')}${mi('k')}${mo('&lt;')}${f('b')}`), '이면'),
-    line('양 끝점을 제외한 구간 ', S('inside','(a,b)',INTERVALS), '에'),
+    line('열린구간 ', S('inside','(a,b)',INTERVALS), '에'),
     line(S('value','f(c)'), math(E), S('k','k'), '인 ', math(mi('c')), '가 존재한다.'),
   ] },
   { id:'average-rate', name:'평균변화율', lines:[
@@ -92,15 +92,15 @@ export const CONCEPTS = [
     line(math(A), '에서 ', S('continuous','연속',CONDITIONS), '이다.'),
   ] },
   { id:'rolle', name:'롤의 정리', lines:[
-    line('양 끝점을 포함한 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), ','),
-    line('양 끝점을 제외한 ', S('open','(a,b)',INTERVALS), '에서 ', S('differentiable','미분 가능',CONDITIONS), '하고'),
+    line('닫힌구간 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), ','),
+    line('열린구간 ', S('open','(a,b)',INTERVALS), '에서 ', S('differentiable','미분 가능',CONDITIONS), '하고'),
     line(S('endpoints','f(a)=f(b)',['f(a)=f(b)','f(a)=−f(b)','f(a)=0','f(b)=0','f(a)f(b)=0']), '이면'),
     line(S('derivative','f′(c)'), math(E), S('zero','0',NUMBERS), '인 ', math(mi('c')), '가 존재한다.'),
-    line('(양 끝점을 제외한 구간 ', S('inside','(a,b)',INTERVALS), '에서)'),
+    line('(열린구간 ', S('inside','(a,b)',INTERVALS), '에서)'),
   ] },
   { id:'mean-value', name:'평균값 정리', lines:[
-    line('양 끝점을 포함한 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), ','),
-    line('양 끝점을 제외한 ', S('open','(a,b)',INTERVALS), '에서 ', S('differentiable','미분 가능',CONDITIONS), '하면'),
+    line('닫힌구간 ', S('closed','[a,b]',INTERVALS), '에서 ', S('continuous','연속',CONDITIONS), ','),
+    line('열린구간 ', S('open','(a,b)',INTERVALS), '에서 ', S('differentiable','미분 가능',CONDITIONS), '하면'),
     line(S('derivative','f′(c)'), math(E), { fraction: [S('numerator','df',DIFFERENCES), S('denominator','dx',DIFFERENCES)] }),
     line('인 ', math(`${mi('c')}${mo('∈')}${mo('(')}${A}${mo(',')}${B}${mo(')')}`), '가 존재한다.'),
   ] },

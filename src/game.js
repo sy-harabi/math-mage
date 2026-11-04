@@ -1,11 +1,11 @@
-import { SPELLS, getSpellAtLevel } from './spells.js?v=1.4.0';
+import { SPELLS, getSpellAtLevel } from './spells.js?v=1.4.1';
 import { generateQuestion } from './problem-engine.js';
-import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.0';
+import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
 import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.4.0';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.4.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
 import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
@@ -13,7 +13,7 @@ import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { separateEnemies } from './enemy-collision.js';
 import { pickEnemyAt } from './targeting.js';
-import { generateConceptSequence, answerConcept } from './concept-questions.js?v=1.4.0';
+import { generateConceptSequence, answerConcept } from './concept-questions.js?v=1.4.1';
 
 (() => {
 'use strict';
