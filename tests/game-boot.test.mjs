@@ -27,6 +27,69 @@ function makeElement(id) {
   };
 }
 
+test('debug stage buttons jump safely through stages 1–7, keep the build, and remain disabled in normal play',async()=>{
+  assert.match(html,/<div id="stage-picker"[^>]*hidden/);
+  const numbers=[...html.matchAll(/data-debug-stage="(\d+)"/g)].map(match=>Number(match[1]));
+  assert.deepEqual(numbers,[1,2,3,4,5,6,7]);
+  for(const debug of [false,true]){
+    const elements=new Map();
+    const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
+    const group=get('stage-picker');group.hidden=true;
+    const buttons=numbers.map(number=>{
+      const button=makeElement(`test-stage-${number}`);button.dataset.debugStage=String(number);
+      button.attributes={};button.setAttribute=(key,value)=>{button.attributes[key]=value;};return button;
+    });
+    const canvas=get('game');canvas.width=960;canvas.height=600;
+    canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
+    globalThis.window={location:{search:debug?'?debug=1':''},addEventListener(){}};
+    globalThis.document={getElementById:get,createElement:makeElement,addEventListener(){},hidden:false,
+      querySelectorAll:selector=>selector==='[data-debug-stage]'?buttons:selector==='.debug-level-picker'?[group]:[]};
+    globalThis.requestAnimationFrame=()=>{};
+    const hook=`globalThis.__stageTest={get state(){return {p,progression,stage,mode,runTimer,enemies,lasers,bolts,explosions,gameOver};},
+      begin,tick,updateUI,selectDebugStage,hurtPlayer,completeRun};`;
+    const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+      .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
+      .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
+    try{
+      await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+      const t=globalThis.__stageTest;
+      assert.equal(group.hidden,!debug);
+      if(!debug){buttons[6].click();t.selectDebugStage(7);assert.equal(t.state.stage.number,1);continue;}
+      assert.equal(buttons[0].attributes['aria-pressed'],'true');
+      const player=t.state.p,progression=t.state.progression;
+      player.levels.bolt=3;player.levels.heal=2;player.bonuses.vitality=1;
+      player.maxHp=125;player.hp=30;progression.level=4;progression.xp=57;
+      t.begin('bolt');assert.equal(t.state.mode,'question');
+      player.cd.heal=4;t.state.runTimer.elapsedSeconds=123;
+      t.state.lasers.push({ttl:1});t.state.bolts.push({ttl:1});t.state.explosions.push({ttl:1});
+      buttons[4].click();
+      assert.equal(t.state.stage.number,5);assert.equal(t.state.mode,'idle');
+      assert.equal(get('math-cast-hud').hidden,true);assert.equal(t.state.enemies.length,0);
+      assert.equal(t.state.lasers.length+t.state.bolts.length+t.state.explosions.length,0);
+      assert.equal(t.state.runTimer.elapsedSeconds,0);assert.equal(player.hp,125);
+      assert.equal(player.cd.heal,0);assert.equal(t.state.p,player);assert.equal(t.state.progression,progression);
+      assert.deepEqual([player.levels.bolt,player.levels.heal,player.bonuses.vitality,progression.level,progression.xp],[3,2,1,4,57]);
+      assert.equal(get('xp-label').textContent,'3/30');
+      t.state.stage.progress=100;t.tick(.05);t.updateUI();
+      assert.equal(t.state.stage.number,6);assert.equal(buttons[5].attributes['aria-pressed'],'true');
+      for(const button of buttons){
+        button.click();assert.equal(t.state.stage.number,Number(button.dataset.debugStage));
+        assert.equal(button.attributes['aria-pressed'],'true');
+        assert.equal(t.state.stage.progress,0);assert.equal(t.state.stage.elapsed,0);
+        assert.equal(t.state.enemies.filter(e=>e.type==='boss').length,button===buttons[6]?1:0);
+      }
+      buttons[6].click();assert.equal(t.state.enemies.length,1,'reselecting stage 7 replaces the prior boss');
+      for(const value of [0,8,1.5,NaN])t.selectDebugStage(value);
+      assert.equal(t.state.stage.number,7);
+      t.hurtPlayer(1000,'test');assert.equal(t.state.gameOver,true);
+      buttons[5].click();assert.equal(t.state.gameOver,false);assert.equal(player.hp,125);assert.equal(t.state.mode,'idle');
+      t.completeRun();assert.equal(get('victory-overlay').hidden,false);
+      buttons[6].click();assert.equal(get('victory-overlay').hidden,true);assert.equal(t.state.mode,'idle');
+      assert.equal(t.state.enemies.length,1);assert.equal(t.state.runTimer.elapsedSeconds,0);
+    }finally{delete globalThis.__stageTest;}
+  }
+});
+
 test('rock game integration: stage transitions, landing, shields, airborne click and boss victory',async()=>{
   const elements=new Map();
   const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};

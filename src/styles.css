@@ -99,6 +99,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
 
 #victory-time{display:block;font-size:48px;font-variant-numeric:tabular-nums;color:#ffdf79;margin:18px 0}.victory-panel button{border-color:#79f6c8;color:#a4ffe4}
 .debug-level-picker{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0 0}.debug-level-picker strong{font-size:12px;color:#90abc5;margin-right:5px}.debug-level-picker button{padding:6px 9px;font-size:11px}.debug-level-picker button.selected{border-color:#68efff;color:#aff7ff;background:#19334a}
+.debug-stage-note{flex-basis:100%;font-size:11px;line-height:1.5;color:#90abc5}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 
 

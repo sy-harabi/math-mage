@@ -83,20 +83,34 @@ function newPlayer() {
   return {x:WORLD_W/2,y:WORLD_H/2,hp:100,maxHp:100,inv:0,failSlow:0,shields:0,shieldFlash:0,
     cd:{bolt:0,heal:0,fireball:0,shield:0}, levels:{bolt:1,heal:0,fireball:0,shield:0}, bonuses:{swiftness:0,vitality:0,focus:0,timeWarp:0},face:0};
 }
-function reset() {
-  p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
+function resetEncounter() {
+  runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
-  pointer=null;
+  pointer=null;keys.clear();
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
+}
+function reset() {
+  p = newPlayer(); progression = createProgression(); resetEncounter();
   cameraUpdate(); startRun();
   say('',0); updateUI();
 }
-function startRun() {
+function startRun(number=1) {
   // Internal phases control enemy spawns, but are never displayed or paused.
-  stage=createStage(1);
-  spawnTimer=stageSpawnConfig(1).interval;
-  for(let i=0;i<2;i++) spawnEnemy('basic');
+  stage=createStage(number);
+  spawnTimer=stageSpawnConfig(number).interval;
+  if(number===1)for(let i=0;i<2;i++) spawnEnemy('basic');
+  updateHiddenPhase();
+}
+function selectDebugStage(number) {
+  if(!DEBUG||!Number.isInteger(number)||number<1||number>FINAL_STAGE)return;
+  // Keep the chosen build and earned XP; start a fresh encounter at this phase.
+  resetEncounter();
+  p.hp=p.maxHp;p.inv=0;p.failSlow=0;p.shieldFlash=0;
+  for(const id of SKILL_IDS)p.cd[id]=0;
+  cameraUpdate();startRun(number);
+  say(`테스트: ${number}스테이지${number===FINAL_STAGE?' · 보스 등장':''}`);
+  updateUI();
 }
 function updateHiddenPhase() {
   while(stage.number<FINAL_STAGE&&stageIsComplete(stage)) {
@@ -455,6 +469,9 @@ for(const name of [...SKILL_IDS,'cancel','restart']){
 // Debug selectors do not appear in normal gameplay; all upgrades normally require XP.
 if(DEBUG){
   document.querySelectorAll('.debug-level-picker').forEach(el=>el.hidden=false);
+  for(const button of document.querySelectorAll('[data-debug-stage]')){
+    button.addEventListener('click',()=>selectDebugStage(Number(button.dataset.debugStage)));
+  }
   for(const which of SKILL_IDS){
     for(const button of document.querySelectorAll(`[data-${which}-level]`)){
       button.addEventListener('click',()=>{
@@ -606,12 +623,18 @@ function updateUI(){
   dom.status.textContent=mode==='upgrade'?'레벨업 · 성장 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
     'WASD 이동 · 클릭 이동 / 조준 · 1–4 마법';
-  if(DEBUG){for(const which of SKILL_IDS){
-    for(const button of document.querySelectorAll(`[data-${which}-level]`)){
-      const chosen=p.levels[which]===Number(button.dataset[which+'Level']);
+  if(DEBUG){
+    for(const button of document.querySelectorAll('[data-debug-stage]')){
+      const chosen=stage.number===Number(button.dataset.debugStage);
       button.classList.toggle('selected',chosen);button.setAttribute('aria-pressed',String(chosen));
     }
-  }}
+    for(const which of SKILL_IDS){
+      for(const button of document.querySelectorAll(`[data-${which}-level]`)){
+        const chosen=p.levels[which]===Number(button.dataset[which+'Level']);
+        button.classList.toggle('selected',chosen);button.setAttribute('aria-pressed',String(chosen));
+      }
+    }
+  }
   if(performance.now()>toastUntil&&dom.toast.textContent)dom.toast.textContent='';
 }
 function loop(ts){
