@@ -1,11 +1,11 @@
 import { SPELLS, getSpellAtLevel } from './spells.js';
 import { generateQuestion } from './problem-engine.js';
 import { resolveChainHits, healingGained } from './combat.js';
-import { ENEMY_TYPES, createEnemy } from './enemy-types.js';
+import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.2';
 import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js';
 import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
 import { createProgression, addXp, xpToNext } from './progression.js';
-import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js';
+import { selectUpgradeChoices, applyUpgrade, movementMultiplier, cooldownMultiplier, worldTimeMultiplier } from './upgrades.js?v=1.2';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js';
 import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
