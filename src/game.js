@@ -11,6 +11,8 @@ import { polynomialMathML, problemMathML } from './math-ui.js';
 import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
+import { separateEnemies } from './enemy-collision.js';
+import { pickEnemyAt } from './targeting.js';
 
 (() => {
 'use strict';
@@ -40,6 +42,7 @@ const keys = new Set();
 let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
+let pointer = null;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
@@ -67,6 +70,7 @@ function reset() {
   p = newPlayer(); progression = createProgression(); runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[];
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
+  pointer=null;
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.mathHud.hidden=true;
   cameraUpdate(); startRun();
   say('1 번개 · 2 힐 · 몬스터 처치로 XP 획득',3); updateUI();
@@ -297,6 +301,7 @@ function moveEnemies(wd) {
     else if(e.type==='boss')handleBoss(e,wd);
     else handleMelee(e,wd);
   }
+  separateEnemies(enemies,wd,{w:WORLD_W,h:WORLD_H});
 }
 function moveLasers(wd) {
   for(const laser of lasers){
@@ -349,12 +354,15 @@ function tick(dt) {
 }
 function point(ev){const r=C.getBoundingClientRect();return {x:(ev.clientX-r.left)*W/r.width,y:(ev.clientY-r.top)*H/r.height};}
 function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y};}
+C.addEventListener('pointermove',ev=>{pointer=point(ev);});
+C.addEventListener('pointerleave',()=>{pointer=null;});
 C.addEventListener('pointerdown',ev=>{
   ev.preventDefault();if(gameOver||mode==='upgrade'||mode==='victory')return;
   const t=point(ev);
+  pointer=t;
   if(mode==='target'){
     const wp=worldPoint(t);
-    const hit=enemies.filter(e=>distance(wp,e)<e.r+20).sort((a,b)=>distance(wp,a)-distance(wp,b))[0];
+    const hit=pickEnemyAt(wp,enemies);
     if(hit)castEnemy(hit);else touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:wp;
     return;
   }
@@ -372,7 +380,7 @@ window.addEventListener('keydown',ev=>{
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
-window.addEventListener('blur',()=>keys.clear());
+window.addEventListener('blur',()=>{keys.clear();pointer=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.victoryRestart.addEventListener('click',reset);
 for(const name of ['bolt','heal','cancel','restart']){
@@ -405,7 +413,7 @@ function fittedLabel(str,x,y,maxWidth,size=20,color='#fff',weight='700'){
   const adjusted=Math.max(10,Math.min(size,size*maxWidth/Math.max(1,measured)));
   label(String(str),x,y,adjusted,color,weight);ctx.restore();
 }
-function drawEnemy(e){
+function drawEnemy(e,selected=false){
   const cfg=ENEMY_TYPES[e.type];
   ctx.save();ctx.translate(e.x,e.y);
   ctx.scale(1+Math.sin(e.wiggle)*.045,1-Math.sin(e.wiggle)*.04);
@@ -421,6 +429,11 @@ function drawEnemy(e){
   const barW=e.r*2+6, y=e.y-e.r-16;
   ctx.fillStyle='#482733';ctx.fillRect(e.x-barW/2,y,barW,6);
   ctx.fillStyle=cfg.border;ctx.fillRect(e.x-barW/2,y,barW*e.hp/e.max,6);
+  if(selected){
+    ctx.strokeStyle='#fff0a8';ctx.lineWidth=2;
+    ctx.strokeRect(e.x-barW/2-2,y-2,barW+4,10);
+    label(`${e.hp}/${e.max}`,e.x,y-13,14,'#fff0a8');
+  }
   if(e.type==='ranged'&&e.windup>0&&e.aim){
     const spec=ENEMY_TYPES.ranged;
     const beam=createLaserSegment(e,e.aim,spec.laserRange);
@@ -440,13 +453,15 @@ function drawEnemy(e){
   }
 }
 function draw(){
+  const selected=mode==='target'&&!gameOver&&pointer?pickEnemyAt(worldPoint(pointer),enemies):null;
+  C.style.cursor=mode==='target'&&!gameOver?(selected?'pointer':'crosshair'):'';
   ctx.clearRect(0,0,W,H);ctx.fillStyle='#13243b';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='#1e3652';ctx.lineWidth=1;
   for(let x=Math.floor(camera.x/48)*48;x<camera.x+W;x+=48){ctx.beginPath();ctx.moveTo(x-camera.x,0);ctx.lineTo(x-camera.x,H);ctx.stroke();}
   for(let y=Math.floor(camera.y/48)*48;y<camera.y+H;y+=48){ctx.beginPath();ctx.moveTo(0,y-camera.y);ctx.lineTo(W,y-camera.y);ctx.stroke();}
   ctx.save();ctx.translate(-camera.x,-camera.y);
   if(touchTarget)circle(touchTarget.x,touchTarget.y,9,null,'#729cbd',1);
-  enemies.forEach(drawEnemy);
+  enemies.forEach(e=>drawEnemy(e,e===selected));
   for(const laser of lasers){
     ctx.save();ctx.strokeStyle='#fb65ce';ctx.shadowColor='#ff96e4';ctx.shadowBlur=22;
     ctx.lineWidth=laser.width;ctx.globalAlpha=.72;
@@ -482,7 +497,7 @@ function draw(){
   if(mode==='target'){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
     label('번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
-    enemies.forEach(e=>circle(e.x-camera.x,e.y-camera.y,e.r+8,null,'#ffe388',3));
+    if(selected)circle(selected.x-camera.x,selected.y-camera.y,selected.r+8,null,'#ffe388',3);
   }
   if(gameOver){
     ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);
