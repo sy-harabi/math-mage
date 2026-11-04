@@ -4,15 +4,16 @@ const EARLY_STAGES = Object.freeze({
   2: { interval: 3.5, weights: { basic: .65, fast: .35 } },
   3: { interval: 3, weights: { basic: .45, fast: .35, ranged: .2 } },
   4: { interval: 2.5, weights: { basic: .35, fast: .4, ranged: .25 } },
-  5: { interval: 2, weights: { basic: .3, fast: .4, ranged: .3 } },
+  5: { interval: 2, weights: { basic: .25, fast: .35, ranged: .25, rock: .15 } },
+  6: { interval: 2, weights: { basic: .20, fast: .30, ranged: .25, rock: .25 } },
+  7: { interval: 2, weights: { basic: .20, fast: .30, ranged: .30, rock: .20 } },
 });
 
 export function stageSpawnConfig(stage) {
   if (!Number.isInteger(stage) || stage < 1) throw new Error('stage must be positive');
   if (EARLY_STAGES[stage]) return EARLY_STAGES[stage];
   return {
-    interval: 2, // Stages 6+ retain the 2-second floor; difficulty scales by enemy stats.
-    weights: { basic: .35, fast: .35, ranged: .30 },
+    ...EARLY_STAGES[7], // The final stage's spawns remain stable while the boss is alive.
   };
 }
 

@@ -1,13 +1,13 @@
 /** Stage progress is separate from character XP. All time is game-time. */
 export const PROGRESS_PER_SECOND = 0.6;
-export const BOSS_APPEAR_PROGRESS = 70;
+export const FINAL_STAGE = 7;
 
 export function createStage(number = 1) {
   if (!Number.isInteger(number) || number < 1) throw new Error('Invalid stage');
   return { number, progress: 0, elapsed: 0, kills: 0, bossSpawned: false, bossDefeated: false };
 }
 
-export const isBossStage = number => number % 5 === 0;
+export const isBossStage = number => number === FINAL_STAGE;
 
 export function addStageTime(stage, seconds) {
   if (seconds < 0 || !Number.isFinite(seconds)) throw new Error('Invalid duration');
@@ -30,8 +30,7 @@ export function addStageKill(stage, enemy) {
 }
 
 export function bossShouldSpawn(stage) {
-  return isBossStage(stage.number) && !stage.bossSpawned &&
-    stage.progress >= BOSS_APPEAR_PROGRESS;
+  return isBossStage(stage.number) && !stage.bossSpawned && !stage.bossDefeated;
 }
 
 export function stageIsComplete(stage) {

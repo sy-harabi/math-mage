@@ -30,19 +30,26 @@ test('stage gauge: 0.6% per second; kill bonus independent from XP',()=>{
   assert.ok(stageIsComplete(stage));
 });
 
-test('boss: spawns at 70%, cannot complete until slain; no cap on normal kills',()=>{
-  const stage=createStage(5);
-  addStageTime(stage,110);assert.equal(stage.progress,66);
-  assert.equal(bossShouldSpawn(stage),false);
-  addStageKill(stage,{type:'fast',stageProgress:7});
+test('only stage 7 spawns a boss immediately and cannot complete until it is slain',()=>{
+  for(let number=1;number<7;number++){
+    const normal=createStage(number);
+    assert.equal(bossShouldSpawn(normal),false);
+    addStageTime(normal,200);
+    assert.equal(normal.progress,100);assert.ok(stageIsComplete(normal));
+    assert.equal(bossShouldSpawn(normal),false);
+  }
+  const stage=createStage(7);
+  assert.equal(stage.progress,0);
   assert.equal(bossShouldSpawn(stage),true);
   stage.bossSpawned=true;
+  assert.equal(bossShouldSpawn(stage),false);
   addStageTime(stage,200);
   assert.equal(stage.progress,99);assert.equal(stageIsComplete(stage),false);
   for(let i=0;i<100;i++)addStageKill(stage,{type:'basic',stageProgress:6});
-  assert.equal(stage.progress,99);assert.equal(stage.kills,101);
+  assert.equal(stage.progress,99);assert.equal(stage.kills,100);
   addStageKill(stage,{type:'boss',stageProgress:30});
   assert.equal(stage.progress,100);assert.equal(stageIsComplete(stage),true);
+  assert.equal(bossShouldSpawn(stage),false);
 });
 
 test('enemy types: HP, XP, speeds, attack, and stage scaling',()=>{

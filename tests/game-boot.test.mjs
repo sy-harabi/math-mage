@@ -27,6 +27,56 @@ function makeElement(id) {
   };
 }
 
+test('rock game integration: stage transitions, landing, shields, airborne click and boss victory',async()=>{
+  const elements=new Map();
+  const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};
+  const canvas=get('game');canvas.width=960;canvas.height=600;
+  canvas.getContext=()=>new Proxy({measureText:s=>({width:String(s).length*12})},{get:(o,k)=>o[k]??(()=>{})});
+  globalThis.window={location:{search:''},addEventListener(){}};
+  globalThis.document={getElementById:get,createElement:makeElement,querySelectorAll:()=>[],addEventListener(){},hidden:false};
+  globalThis.requestAnimationFrame=()=>{};
+  // Expose closure state only in the test copy; production has no debug backdoor.
+  const hook=`globalThis.__rockIntegration={get state(){return {p,enemies,stage,mode,runTimer};},
+    reset,tick,draw,updateUI,updateHiddenPhase,killedEnemy,spawnEnemy,keys,
+    setPhase(number,progress=0){stage=createStage(number);stage.progress=progress;enemies=[];spawnTimer=100;updateHiddenPhase();},
+    targetBolt(){mode='target';spell='bolt';activeCastConfig=getSpellAtLevel('bolt',3);}};`;
+  const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+    .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
+    .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);');
+  try{
+    await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+    const t=globalThis.__rockIntegration;
+    t.setPhase(5,100);assert.equal(t.state.stage.number,6);assert.equal(t.state.enemies.length,0);
+    t.setPhase(6,100);assert.equal(t.state.stage.number,7);assert.equal(t.state.stage.progress,0);
+    assert.equal(t.state.enemies.filter(e=>e.type==='boss').length,1);
+    assert.equal(t.state.enemies[0].speed,160);
+    t.updateHiddenPhase();t.updateHiddenPhase();assert.equal(t.state.enemies.length,1);
+
+    t.reset();t.setPhase(5);
+    const e=t.spawnEnemy('rock',t.state.p.x-300,t.state.p.y);e.jumpCooldown=0;
+    t.tick(.05);assert.equal(e.action,'windupJump');t.draw();
+    t.keys.add('d');for(let i=0;i<18;i++)t.tick(.05);t.keys.clear();
+    assert.equal(e.action,'jump');assert.ok(e.jumpHeight>80);
+    t.targetBolt();t.draw();
+    const click={clientX:e.x-(t.state.p.x-480),clientY:e.y-e.jumpHeight-(t.state.p.y-300),preventDefault(){}};
+    canvas._listeners.get('pointermove')(click);t.draw();canvas._listeners.get('pointerdown')(click);
+    assert.equal(e.hp,20,'airborne visible body receives the click and lightning damage');
+    for(let i=0;i<15;i++)t.tick(.05);
+    assert.equal(t.state.p.hp,100,'moving away from the locked target avoids landing');
+
+    for(const shield of [false,true]){
+      t.reset();t.setPhase(6);t.state.p.shields=Number(shield);
+      const e=t.spawnEnemy('rock',t.state.p.x-300,t.state.p.y);e.jumpCooldown=0;
+      for(let i=0;i<25;i++)t.tick(.05);
+      assert.equal(t.state.p.hp,shield?100:74);assert.equal(t.state.p.shields,0);
+      assert.equal(e.action,'recoverJump');t.draw();
+    }
+    t.reset();t.setPhase(7);const boss=t.state.enemies[0];boss.hp=0;t.killedEnemy(boss);
+    assert.equal(t.state.mode,'victory');assert.equal(get('victory-overlay').hidden,false);
+    t.tick(.05);assert.equal(t.state.enemies.filter(e=>e.type==='boss').length,0);
+  }finally{delete globalThis.__rockIntegration;}
+});
+
 test('game boots with native MathML choices and WASD active during question', async()=>{
   const elements=new Map();
   const get=id=>{if(!ids.has(id))return null;if(!elements.has(id))elements.set(id,makeElement(id));return elements.get(id);};

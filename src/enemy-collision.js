@@ -5,6 +5,8 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 /** Resolve enemy-only overlaps. Boss movement and player movement stay authoritative. */
 export function separateEnemies(enemies, seconds, world) {
+  // Airborne rocks pass over crowds without shifting their locked landing point.
+  enemies = enemies.filter(enemy => enemy.action !== 'jump');
   if (!(seconds > 0) || enemies.length < 2) return;
   const cellSize = Math.max(...enemies.map(enemy => enemy.r)) * BODY_SCALE * 2;
   const strength = 1 - Math.exp(-30 * seconds / PASSES);
@@ -34,8 +36,8 @@ export function separateEnemies(enemies, seconds, world) {
               const angle = (i * 2.399963 + j * .618034) % (Math.PI * 2);
               dx = Math.cos(angle); dy = Math.sin(angle);
             }
-            const weightA = a.type === 'boss' ? 0 : 1 / (a.r * a.r);
-            const weightB = b.type === 'boss' ? 0 : 1 / (b.r * b.r);
+            const weightA = a.type === 'boss' || (a.type === 'rock' && a.action !== 'chase') ? 0 : 1 / (a.r * a.r);
+            const weightB = b.type === 'boss' || (b.type === 'rock' && b.action !== 'chase') ? 0 : 1 / (b.r * b.r);
             const total = weightA + weightB;
             if (!total) continue;
             const push = Math.min((minDistance - distance) * strength, 180 * seconds / PASSES);

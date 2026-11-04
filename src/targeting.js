@@ -4,7 +4,7 @@ export function pickEnemyAt(point, enemies, padding = 20) {
   let selected = null, closest = Infinity;
   for (const enemy of enemies) {
     if (enemy.hp <= 0) continue;
-    const distance = Math.hypot(point.x - enemy.x, point.y - enemy.y);
+    const distance = Math.hypot(point.x - enemy.x, point.y - (enemy.y - (enemy.jumpHeight || 0)));
     if (distance < enemy.r + padding && distance < closest) {
       selected = enemy; closest = distance;
     }

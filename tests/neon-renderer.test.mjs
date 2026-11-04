@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createEnemy, ENEMY_TYPES } from '../src/enemy-types.js';
 import { createLaserSegment } from '../src/laser.js';
-import { drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from '../src/neon-renderer.js';
+import { drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser, drawRockWarning } from '../src/neon-renderer.js';
+import { PLAYER_HIT_RADIUS } from '../src/rock-slime.js';
 
 function recordingContext(){
   const calls=[],strokes=[];let points=[],depth=0;
@@ -56,4 +57,17 @@ test('every neon sprite and effect renders without changing game state or leakin
   drawNeonLaser(ctx,laser);
   assert.equal(ctx.strokes.at(-2).width,34,'visible beam includes the full damage width');
   assert.equal(ctx.depth,0);
+});
+
+test('rock warning stays at locked landing point and shows the full hit boundary',()=>{
+  const e={...createEnemy('rock',100,100,()=>.5),action:'windupJump',actionTimer:.35,aim:{x:350,y:300}};
+  for(const action of ['windupJump','jump']){
+    e.action=action;const before=structuredClone(e),ctx=recordingContext();
+    drawRockWarning(ctx,e);
+    const arcs=ctx.calls.filter(c=>c.method==='arc');
+    assert.deepEqual(arcs[0].args.slice(0,3),[350,300,ENEMY_TYPES.rock.jumpRadius+PLAYER_HIT_RADIUS]);
+    assert.deepEqual(e,before);assert.equal(ctx.depth,0);
+  }
+  const ctx=recordingContext();drawRockWarning(ctx,{...e,action:'recoverJump'});
+  assert.equal(ctx.calls.length,0);
 });

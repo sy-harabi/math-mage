@@ -16,8 +16,15 @@ export const ENEMY_TYPES = Object.freeze({
     preferredMin: 230, preferredMax: 320, radius: 20,
     xp: 10, stageProgress: 8, fill: '#af84ea', border: '#dcc5ff',
   },
+  rock: {
+    name: '바위 슬라임', hp: 60, speed: 115, speedVariance: 0,
+    damage: 20, attackInterval: 1.5, radius: 25,
+    jumpCooldown: 4, jumpMinRange: 120, jumpTriggerRange: 500, jumpMaxDistance: 420,
+    jumpSpeed: 700, jumpWindup: .7, jumpRecovery: .6, jumpRadius: 65, jumpDamage: 24,
+    xp: 12, stageProgress: 9, fill: '#928577', border: '#ffe0a6',
+  },
   boss: {
-    name: '슬라임 군주', hp: 260, speed: 140, speedVariance: 0,
+    name: '슬라임 군주', hp: 260, speed: 160, speedVariance: 0,
     damage: 28, slamDamage: 28, slamRadius: 175, slamWindup: .9,
     dashDamage: 22, dashSpeed: 900, dashDuration: .8, dashWindup: .5,
     attackInterval: 3.5, enragedAttackInterval: 3.0, radius: 45,
@@ -39,5 +46,9 @@ export function createEnemy(type, x, y, rng = Math.random, stage = 1) {
     shootTimer: spec.attackInterval, windup: 0, aim: null,
     action: 'chase', actionTimer: 0, actionCount: 0,
     dashHit: false, // Boss minion summons removed.
+    ...(type === 'rock' ? {
+      jumpCooldown: spec.jumpCooldown, jumpHeight: 0,
+      jumpDamage: Math.ceil(spec.jumpDamage * (1 + tier * 0.08)),
+    } : {}),
   };
 }

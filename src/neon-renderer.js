@@ -1,9 +1,10 @@
 import { createLaserSegment } from './laser.js';
-import { ENEMY_TYPES } from './enemy-types.js?v=enemy-balance-2';
+import { ENEMY_TYPES } from './enemy-types.js?v=1.9.0';
+import { PLAYER_HIT_RADIUS } from './rock-slime.js?v=1.9.0';
 
 // Presentation only: world positions, collision radii and attack timing stay in game.js.
 export const NEON = Object.freeze({
-  hero:'#68efff', basic:'#a0f27a', fast:'#ff728b', ranged:'#da8bff', boss:'#ff9ce8',
+  hero:'#68efff', basic:'#a0f27a', fast:'#ff728b', ranged:'#da8bff', rock:'#ffd394', boss:'#ff9ce8',
 });
 const TAU=Math.PI*2;
 function ring(ctx,x,y,r,color,width=1.5,start=0,end=TAU){
@@ -65,6 +66,11 @@ export function drawNeonSlime(ctx,e,player){
     ctx.lineTo(-r*.6,-r*.2);ctx.lineTo(-r*1.05,r*.15);
     ctx.lineTo(-r*.55,r*.35);ctx.lineTo(-r*.85,r*.7);
     ctx.quadraticCurveTo(r*.55,r*.85,r,0);
+  }else if(e.type==='rock'){
+    // Broad, angular plates distinguish the heavy jumper from the round slimes.
+    ctx.moveTo(-r,r*.55);ctx.lineTo(-r*.92,-r*.25);ctx.lineTo(-r*.48,-r*.88);
+    ctx.lineTo(r*.15,-r);ctx.lineTo(r*.8,-r*.55);ctx.lineTo(r,r*.4);
+    ctx.lineTo(r*.55,r*.8);ctx.lineTo(-r*.45,r*.85);
   }else{
     ctx.moveTo(-r,r*.5);ctx.quadraticCurveTo(-r*1.1,-r*.8,0,-r);
     ctx.quadraticCurveTo(r*1.1,-r*.8,r,r*.5);
@@ -72,6 +78,13 @@ export function drawNeonSlime(ctx,e,player){
     ctx.quadraticCurveTo(-r*.9,r*.8,-r,r*.5);
   }
   ctx.closePath();ctx.fill();ctx.stroke();
+  if(e.type==='rock'){
+    ctx.shadowBlur=2;ctx.strokeStyle='#bca98b';ctx.lineWidth=1.3;
+    ctx.beginPath();ctx.moveTo(-r*.48,-r*.88);ctx.lineTo(-r*.12,-r*.42);
+    ctx.lineTo(-r*.3,0);ctx.lineTo(-r*.85,r*.35);
+    ctx.moveTo(r*.8,-r*.55);ctx.lineTo(r*.32,-r*.32);ctx.lineTo(r*.45,r*.17);
+    ctx.moveTo(r*.45,r*.17);ctx.lineTo(r*.18,r*.74);ctx.stroke();
+  }
   if(e.type==='ranged'){
     const target=e.aim||player;
     ctx.rotate(Math.atan2(target.y-e.y,target.x-e.x));
@@ -104,6 +117,19 @@ export function drawNeonSlime(ctx,e,player){
     path(ctx,[[-24,-r+3],[-24,-r-13],[-12,-r-5],[0,-r-22],[12,-r-5],[24,-r-13],[24,-r+3]],'#2a163a','#ffd780');
     ring(ctx,0,0,r+7,color,1,Math.PI*.12,Math.PI*.88);
   }
+  ctx.restore();
+}
+
+/** The outer ring includes the player's radius, matching landing hit detection. */
+export function drawRockWarning(ctx,e){
+  if(!e.aim || !['windupJump','jump'].includes(e.action))return;
+  const spec=ENEMY_TYPES.rock;
+  const charge=e.action==='jump'?1:Math.max(0,Math.min(1,1-e.actionTimer/spec.jumpWindup));
+  const radius=spec.jumpRadius+PLAYER_HIT_RADIUS;
+  ctx.save();ctx.fillStyle=`rgba(255,185,98,${.10+charge*.12})`;
+  ctx.beginPath();ctx.arc(e.aim.x,e.aim.y,radius,0,TAU);ctx.fill();
+  ring(ctx,e.aim.x,e.aim.y,radius,NEON.rock,2);
+  ring(ctx,e.aim.x,e.aim.y,radius*(1-.75*charge),'#fff0c9',1.5);
   ctx.restore();
 }
 

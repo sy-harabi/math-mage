@@ -1,9 +1,10 @@
 import { SPELLS, getSpellAtLevel } from './spells.js?v=1.8.0';
 import { generateQuestion } from './problem-engine.js?v=1.5.1';
 import { resolveChainHits, healingGained, resolveAreaHits } from './combat.js?v=1.4.1';
-import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=enemy-balance-2';
-import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=spawn-balance-1';
-import { createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js';
+import { ENEMY_TYPES, createEnemy } from './enemy-types.js?v=1.9.0';
+import { stageSpawnConfig, randomEnemyType, chooseSpawnPosition } from './spawn-director.js?v=1.9.0';
+import { FINAL_STAGE, createStage, addStageTime, addStageKill, bossShouldSpawn, stageIsComplete } from './stage-director.js?v=1.9.0';
+import { updateRockSlime } from './rock-slime.js?v=1.9.0';
 import { createProgression, addXp, xpToNext } from './progression.js?v=1.8.0';
 import { selectUpgradeChoices, applyUpgrade, movementMultiplier, spellCooldownSeconds, worldTimeMultiplier } from './upgrades.js?v=1.8.1';
 import { createRunTimer, advanceRunTimer, finishRunTimer, formatRunTime } from './speedrun.js?v=1.8.1';
@@ -12,12 +13,12 @@ import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
-import { separateEnemies } from './enemy-collision.js';
-import { pickEnemyAt } from './targeting.js';
+import { separateEnemies } from './enemy-collision.js?v=1.9.0';
+import { pickEnemyAt } from './targeting.js?v=1.9.0';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
 import { generateBoltSequence, answerBolt } from './bolt-sequence.js?v=1.5.2';
 import { grantShield, applyPlayerHit } from './shield.js';
-import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser } from './neon-renderer.js?v=laser-warning-rails-1';
+import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, drawNeonLaser, drawRockWarning } from './neon-renderer.js?v=1.9.0';
 
 (() => {
 'use strict';
@@ -98,7 +99,7 @@ function startRun() {
   for(let i=0;i<2;i++) spawnEnemy('basic');
 }
 function updateHiddenPhase() {
-  while(stage.number<5&&stageIsComplete(stage)) {
+  while(stage.number<FINAL_STAGE&&stageIsComplete(stage)) {
     stage=createStage(stage.number+1);
     spawnTimer=Math.min(spawnTimer,stageSpawnConfig(stage.number).interval);
     // Preserve living enemies, projectiles, and the player's position.
@@ -349,6 +350,14 @@ function moveEnemies(wd) {
     e.wiggle+=wd*3;
     e.attack=Math.max(0,e.attack-wd);
     if(e.type==='ranged')handleRanged(e,wd);
+    else if(e.type==='rock'){
+      const event=updateRockSlime(e,p,wd,{w:WORLD_W,h:WORLD_H});
+      if(event?.type==='landing'){
+        explosions.push({x:event.x,y:event.y,r:ENEMY_TYPES.rock.jumpRadius,ttl:.4,color:NEON.rock});
+        sparkle(event.x,event.y,NEON.rock,20);
+        if(event.hit)hurtPlayer(event.damage,'바위 슬라임 착지');
+      }else if(event?.type==='melee')hurtPlayer(event.damage,'바위 슬라임 피격');
+    }
     else if(e.type==='boss')handleBoss(e,wd);
     else handleMelee(e,wd);
   }
@@ -472,6 +481,9 @@ function fittedLabel(str,x,y,maxWidth,size=20,color='#fff',weight='700'){
 }
 function drawEnemy(e,selected=false){
   const cfg=ENEMY_TYPES[e.type];
+  const lift=e.jumpHeight||0;
+  if(lift>0)circle(e.x,e.y,e.r*.7,'#00000055',NEON.rock,1);
+  ctx.save();if(lift>0)ctx.translate(0,-lift);
   drawNeonSlime(ctx,e,p);
   const barW=e.r*2+6, y=e.y-e.r-16;
   ctx.fillStyle='#24233b';ctx.fillRect(e.x-barW/2,y,barW,4);
@@ -490,6 +502,7 @@ function drawEnemy(e,selected=false){
     ctx.strokeStyle='#ff9074';ctx.lineWidth=2*(e.r+21);ctx.globalAlpha=.24;
     ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+dx/len*cfg.dashSpeed*cfg.dashDuration,e.y+dy/len*cfg.dashSpeed*cfg.dashDuration);ctx.stroke();ctx.globalAlpha=1;
   }
+  ctx.restore();
 }
 function draw(){
   const selected=mode==='target'&&spell==='bolt'&&!gameOver&&pointer?pickEnemyAt(worldPoint(pointer),enemies):null;
@@ -500,6 +513,7 @@ function draw(){
   const fireballCenter=mode==='target'&&spell==='fireball'?(pointer?worldPoint(pointer):p):null;
   const fireballTargets=new Set(fireballCenter?resolveAreaHits(fireballCenter,enemies,activeCastConfig.radius,activeCastConfig.power).map(hit=>hit.enemy):[]);
   enemies.filter(e=>e.type==='ranged').forEach(e=>drawLaserWarning(ctx,e,ENEMY_TYPES.ranged));
+  enemies.filter(e=>e.type==='rock').forEach(e=>drawRockWarning(ctx,e));
   enemies.forEach(e=>drawEnemy(e,e===selected||fireballTargets.has(e)));
   if(fireballCenter){
     circle(fireballCenter.x,fireballCenter.y,activeCastConfig.radius,'#ff8d343f','#ffc18e',2);
@@ -507,7 +521,7 @@ function draw(){
   }
   for(const blast of explosions){
     ctx.save();ctx.globalAlpha=blast.ttl/.4;
-    circle(blast.x,blast.y,blast.r,'#ff8d3480','#ffe1a0',3);ctx.restore();
+    circle(blast.x,blast.y,blast.r,blast.color?'#ffd39444':'#ff8d3480',blast.color||'#ffe1a0',3);ctx.restore();
   }
   for(const laser of lasers)drawNeonLaser(ctx,laser);
   if(p.shields>0){
@@ -545,7 +559,7 @@ function draw(){
   if(mode==='target'){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
     label(spell==='fireball'?'파이어볼 대기 중 — 폭발시킬 위치를 클릭하세요':'번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
-    if(selected)circle(selected.x-camera.x,selected.y-camera.y,selected.r+8,null,'#ffe388',3);
+    if(selected)circle(selected.x-camera.x,selected.y-camera.y-(selected.jumpHeight||0),selected.r+8,null,'#ffe388',3);
   }
   if(gameOver){
     ctx.fillStyle='#05101bcb';ctx.fillRect(0,0,W,H);
