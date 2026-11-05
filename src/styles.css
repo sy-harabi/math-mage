@@ -72,6 +72,28 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
 .game-overlay{position:absolute;inset:0;z-index:6;background:#050a1be8;display:flex;justify-content:center;align-items:center;padding:22px}
 .overlay-panel{width:min(100%,650px);border:1px solid #507a97;border-radius:12px;background:#0c152a;padding:26px;text-align:center;box-shadow:0 0 40px #68efff0c}
 .overlay-panel h2{font-size:24px;margin:0 0 8px;color:#d9faff}.overlay-panel p{color:#8fa7bf;margin:5px 0 20px;font-size:13px}
+.intro-overlay{z-index:8;background:#040918f4;--rune:#ffdf79;--rune-soft:#ffdf7955}
+.intro-panel{width:min(100%,760px);padding:27px 30px 25px;border-color:#457c9b;background:linear-gradient(155deg,#101e37,#0a1226);box-shadow:0 0 45px #68efff13}
+.intro-eyebrow{font-size:10px;letter-spacing:.24em;color:#75bbd6}
+.intro-panel h2{font-size:30px;letter-spacing:.07em;margin:7px 0 4px}
+.intro-panel .intro-tagline{margin:0 0 23px;font-size:12px}
+.intro-content{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left}
+.intro-section{min-width:0;padding:17px 15px;border:1px solid #294866;border-radius:10px;background:#0a152a}
+.intro-section h3{margin:0 0 16px;font-size:15px;color:#a2e8ff}
+.intro-bolt h3 span{font-size:11px;color:#899db9;font-weight:400}
+.intro-controls dl{margin:0}
+.intro-controls dl>div{padding:9px 0;border-top:1px solid #29415a}
+.intro-controls dl>div:first-child{border-top:0;padding-top:0}
+.intro-controls dt{font-size:12px;font-weight:700;color:#8eceed;margin-bottom:5px}
+.intro-controls dd{margin:0;font-size:12px;line-height:1.5;color:#e0ebfb;word-break:keep-all}
+.intro-bolt-problem{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:90px;color:#e6f4ff}
+.intro-bolt-problem math{font-size:22px;white-space:nowrap}
+.intro-bolt-steps{display:flex;gap:10px;align-items:center;justify-content:center;margin:11px 0 8px;color:#ffdf79;font-size:15px;font-weight:600}
+.intro-bolt-steps span:nth-child(2){color:#8297b2;font-size:12px}
+.intro-section p{font-size:11px;margin:9px 0 0;line-height:1.5;text-align:center;word-break:keep-all}
+.start-button{width:min(100%,300px);margin-top:23px;padding:13px 16px;border:1px solid #72cafa;background:#10527c;color:#f1fbff;font-size:17px;box-shadow:0 0 19px #68efff1c;transition:background .15s,box-shadow .15s}
+.start-button:hover:not(:disabled){background:#176b97;box-shadow:0 0 26px #68efff38}
+.start-button kbd{margin-left:12px;border:1px solid #8db4cd8c;padding:2px 6px;border-radius:4px;font:11px system-ui;color:#c7d8e8;background:#091b31}
 .upgrade-panel{width:min(100%,920px);padding:20px;max-height:100%;overflow-y:auto}
 .upgrade-panel h2{font-size:22px;letter-spacing:.02em}
 .upgrade-panel>p{font-size:12px;line-height:1.6;margin:5px 0 18px;word-break:keep-all}
