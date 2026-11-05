@@ -55,13 +55,15 @@ const dom = {
   deathCapture:document.getElementById('death-capture'),
   mathHud: document.getElementById('math-cast-hud'), runeFrame: document.getElementById('rune-frame'),
   mathProblem: document.getElementById('math-problem'), mathAnswers: document.getElementById('math-answers'),
+  introOverlay: document.getElementById('intro-overlay'), introBoltProblem: document.getElementById('intro-bolt-problem'),
+  startButton: document.getElementById('start-button'),
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
 let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, integralSequence, boltSequence, explosions;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
 let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
-let pointer = null, capturePending = false;
+let pointer = null, capturePending = false, introActive = false;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
@@ -102,6 +104,19 @@ function reset() {
   p = newPlayer(); progression = createProgression(); resetEncounter();
   cameraUpdate(); startRun();
   say('',0); updateUI();
+}
+function showIntro() {
+  introActive=true;dom.introOverlay.hidden=false;keys.clear();touchTarget=null;
+  // Reuse the in-game lightning question renderer so the derivative format stays identical.
+  dom.introBoltProblem.innerHTML=boltSequenceMathML({
+    question:{data:{inputTerms:[{num:3,den:1,power:2},{num:2,den:1,power:1}]}},
+    sourceIndices:[0,1],selectedTerms:[],index:0,correctIndices:[0,1]
+  },'번개');
+  updateUI();
+}
+function startGame() {
+  if(!introActive)return;
+  introActive=false;dom.introOverlay.hidden=true;last=0;updateUI();
 }
 function startRun(number=1) {
   // Internal phases control enemy spawns, but are never displayed or paused.
@@ -436,7 +451,7 @@ function moveHero(wd) {
   }
 }
 function tick(dt) {
-  if(gameOver||mode==='victory'||mode==='upgrade')return;
+  if(introActive||gameOver||mode==='victory'||mode==='upgrade')return;
   const wd=dt*worldTimeMultiplier(mode,p);
   p.inv=Math.max(0,p.inv-wd);
   p.shieldFlash=Math.max(0,p.shieldFlash-dt);
@@ -470,7 +485,7 @@ function worldPoint(pt){return {x:pt.x+camera.x,y:pt.y+camera.y};}
 C.addEventListener('pointermove',ev=>{pointer=point(ev);});
 C.addEventListener('pointerleave',()=>{pointer=null;});
 C.addEventListener('pointerdown',ev=>{
-  ev.preventDefault();if(gameOver||mode==='upgrade'||mode==='victory')return;
+  ev.preventDefault();if(introActive||gameOver||mode==='upgrade'||mode==='victory')return;
   const t=point(ev);
   pointer=t;
   if(mode==='target'){
@@ -485,6 +500,7 @@ C.addEventListener('pointerdown',ev=>{
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',ev=>{
   const key=ev.key.toLowerCase();
+  if(introActive){if(key==='enter'){ev.preventDefault();if(!ev.repeat)startGame();}return;}
   if(MOVE_KEYS.has(key)||/^[1-5]$/.test(key)||key==='escape')ev.preventDefault();
   if(mode==='upgrade'||mode==='victory'||gameOver){if(key==='r'&&(gameOver||mode==='victory'))reset();return;}
   keys.add(key);if(MOVE_KEYS.has(key))touchTarget=null;
@@ -496,6 +512,7 @@ window.addEventListener('keydown',ev=>{
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
 window.addEventListener('blur',()=>{keys.clear();pointer=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
+dom.startButton.addEventListener('click',startGame);
 dom.victoryRestart.addEventListener('click',reset);
 dom.deathRestart.addEventListener('click',reset);
 dom.victoryCapture.addEventListener('click',captureResult);
@@ -645,13 +662,13 @@ function updateUI(){
     }
     const ready=p.cd[k]<=0,cdTotal=spellCooldownSeconds(getSpellAtLevel(k,p.levels[k]).cooldownSeconds,p);
     const fill=ready?100:100*clamp(1-p.cd[k]/cdTotal,0,1);
-    dom[k].disabled=gameOver||mode!=='idle'||!ready;
+    dom[k].disabled=introActive||gameOver||mode!=='idle'||!ready;
     dom[k].classList.toggle('active',spell===k);dom[k].classList.toggle('ready',ready);
     dom[k+'Fill'].style.width=fill+'%';
     dom[k+'State'].textContent=`Lv${p.levels[k]} · `+(ready?'준비':p.cd[k].toFixed(1)+'초');
   }
-  dom.cancel.disabled=gameOver||(mode!=='question'&&mode!=='target');
-  dom.status.textContent=mode==='upgrade'?'레벨업 · 성장 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
+  dom.cancel.disabled=introActive||gameOver||(mode!=='question'&&mode!=='target');
+  dom.status.textContent=introActive?'게임 시작을 눌러 플레이하세요':mode==='upgrade'?'레벨업 · 성장 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
     mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
     'WASD 이동 · 클릭 이동 / 조준 · 1–4 마법';
   if(DEBUG){
@@ -672,13 +689,13 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    advanceRunTimer(runTimer,rawDt,!gameOver&&mode!=='victory'&&mode!=='upgrade');
+    advanceRunTimer(runTimer,rawDt,!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
     tick(Math.min(.05,rawDt));updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
 }
 if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).observe(C);
 else window.addEventListener('resize',updateRuneScale);
-updateRuneScale();reset();requestAnimationFrame(loop);
+updateRuneScale();reset();showIntro();requestAnimationFrame(loop);
 })();
 
