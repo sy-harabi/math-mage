@@ -18,6 +18,30 @@
   <div class="game-brand"><h1>아브라칼큘러스!</h1><small>미분하고, 적분하고, 살아남아라.</small></div>
 </header>
 <div id="stage"><canvas id="game" width="960" height="600" aria-label="아브라칼큘러스! 게임"></canvas><div id="toast" role="status">1 번개 · 2 파이어볼 · 3 보호막 · 4 힐 · WASD 이동</div><div id="slow"></div>
+<div id="intro-overlay" class="game-overlay intro-overlay" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <section class="overlay-panel intro-panel">
+    <div class="intro-eyebrow">NEON CALCULUS SURVIVAL</div>
+    <h2 id="intro-title">아브라칼큘러스!</h2>
+    <p class="intro-tagline">미분하고, 적분하고, 살아남아라.</p>
+    <div class="intro-content">
+      <div class="intro-section intro-controls">
+        <h3>조작 방법</h3>
+        <dl>
+          <div><dt>이동</dt><dd>WASD 또는 가고자 하는 곳 클릭</dd></div>
+          <div><dt>타겟 지정</dt><dd>마우스 클릭</dd></div>
+          <div><dt>마법 사용</dt><dd>하단 마법 아이콘 클릭 또는 숫자키 1~4</dd></div>
+        </dl>
+      </div>
+      <div class="intro-section intro-bolt">
+        <h3>번개 마법 <span>미분</span></h3>
+        <div id="intro-bolt-problem" class="intro-bolt-problem" aria-label="번개 마법 예시 문제"></div>
+        <div class="intro-bolt-steps"><span>① 6x</span><span>→</span><span>② +2</span></div>
+        <p>마법진에서 정답 항을 순서대로 클릭하세요.</p>
+      </div>
+    </div>
+    <button type="button" id="start-button" class="start-button">게임 시작 <kbd>Enter</kbd></button>
+  </section>
+</div>
 <div id="upgrade-overlay" class="game-overlay" hidden>
   <div class="overlay-panel upgrade-panel"><h2 id="upgrade-heading">레벨업</h2><p>원하는 성장을 선택하세요. 선택 중에는 전투와 기록이 정지됩니다.</p><div id="upgrade-options" class="upgrade-options"></div></div>
 </div>
