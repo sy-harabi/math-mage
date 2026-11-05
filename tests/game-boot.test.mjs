@@ -163,10 +163,13 @@ test('game boots with native MathML choices and WASD active during question', as
   globalThis.window={location:{search:''},matchMedia:()=>({matches:false}),addEventListener:(k,f)=>windowListeners.set(k,f)};
   globalThis.document={getElementById:get,createElement:makeElement,
     querySelectorAll:()=>[],addEventListener:()=>{},hidden:false};
-  globalThis.requestAnimationFrame=()=>{}; // don't run the frame loop during boot
+  let frame;
+  globalThis.requestAnimationFrame=fn=>{frame=fn;};
   await import('../src/game.js');
   assert.equal(get('intro-overlay').hidden,false,'the first screen must wait for Start');
   assert.equal(get('bolt').disabled,true,'spell buttons are locked before Start');
+  frame(1000);frame(2500);
+  assert.equal(get('run-time').textContent,'00:00.00','the speedrun clock waits at the intro');
   assert.match(get('intro-bolt-problem').innerHTML,/<mfrac><mi mathvariant="normal">d<\/mi><mrow><mi mathvariant="normal">d<\/mi><mi>x<\/mi><\/mrow><\/mfrac>/);
   assert.match(html, /이동<\/dt><dd>WASD 또는 가고자 하는 곳 클릭/);
   assert.match(html, /타겟 지정<\/dt><dd>마우스 클릭/);
@@ -176,6 +179,8 @@ test('game boots with native MathML choices and WASD active during question', as
   windowListeners.get('keydown')({key:'Enter',repeat:false,preventDefault(){}});
   assert.equal(get('intro-overlay').hidden,true,'Enter starts the run');
   assert.equal(get('run-time').textContent,'00:00.00');
+  frame(2550);frame(2650);
+  assert.notEqual(get('run-time').textContent,'00:00.00','the clock advances after Start');
   assert.equal(get('math-cast-hud').hidden,true);
   assert.ok(get('enemies-count')!==null);
   assert.equal(get('bolt').disabled,false);
