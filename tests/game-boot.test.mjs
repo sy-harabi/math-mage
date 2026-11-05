@@ -61,9 +61,10 @@ test('debug stage buttons jump safely through stages 1–7, keep the build, and 
       begin,tick,updateUI,selectDebugStage,hurtPlayer,completeRun};`;
     const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
       .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-      .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
+      .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
     try{
       await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+    get('start-button').click();
       const t=globalThis.__stageTest;
       assert.equal(group.hidden,!debug);
       if(!debug){buttons[6].click();t.selectDebugStage(7);assert.equal(t.state.stage.number,1);continue;}
@@ -117,9 +118,10 @@ test('rock game integration: stage transitions, landing, shields, airborne click
     targetBolt(){mode='target';spell='bolt';activeCastConfig=getSpellAtLevel('bolt',3);}};`;
   const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);');
+    .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);');
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+    get('start-button').click();
     const t=globalThis.__rockIntegration;
     t.setPhase(5,100);assert.equal(t.state.stage.number,6);assert.equal(t.state.enemies.length,0);
     t.setPhase(6,100);assert.equal(t.state.stage.number,7);assert.equal(t.state.stage.progress,0);
@@ -163,6 +165,16 @@ test('game boots with native MathML choices and WASD active during question', as
     querySelectorAll:()=>[],addEventListener:()=>{},hidden:false};
   globalThis.requestAnimationFrame=()=>{}; // don't run the frame loop during boot
   await import('../src/game.js');
+  assert.equal(get('intro-overlay').hidden,false,'the first screen must wait for Start');
+  assert.equal(get('bolt').disabled,true,'spell buttons are locked before Start');
+  assert.match(get('intro-bolt-problem').innerHTML,/<mfrac><mi mathvariant="normal">d<\/mi><mrow><mi mathvariant="normal">d<\/mi><mi>x<\/mi><\/mrow><\/mfrac>/);
+  assert.match(html, /이동<\/dt><dd>WASD 또는 가고자 하는 곳 클릭/);
+  assert.match(html, /타겟 지정<\/dt><dd>마우스 클릭/);
+  assert.match(html, /마법 사용<\/dt><dd>하단 마법 아이콘 클릭 또는 숫자키 1~4/);
+  windowListeners.get('keydown')({key:'1',repeat:false,preventDefault(){}});
+  assert.equal(get('math-cast-hud').hidden,true,'spells cannot activate on the first screen');
+  windowListeners.get('keydown')({key:'Enter',repeat:false,preventDefault(){}});
+  assert.equal(get('intro-overlay').hidden,true,'Enter starts the run');
   assert.equal(get('run-time').textContent,'00:00.00');
   assert.equal(get('math-cast-hud').hidden,true);
   assert.ok(get('enemies-count')!==null);
@@ -204,6 +216,7 @@ test('PC rune ritual keeps five clickable MathML options, movement and cancellat
     querySelectorAll:()=>[],addEventListener:()=>{},hidden:false};
   globalThis.requestAnimationFrame=()=>{};
   await import('../src/game.js?pc-rune-test');
+    get('start-button').click();
   assert.equal(get('math-cast-hud').hidden,true);
   get('bolt').click();
   assert.equal(get('math-cast-hud').hidden,false);
@@ -248,6 +261,7 @@ test('fireball assembles every rank with refreshed runes and final +C, previews 
   const random=Math.random;Math.random=()=>.25;
   try{
     await import('../src/game.js?indefinite-integral-events');
+    get('start-button').click();
     for(let level=1;level<=3;level++){
       get('restart').click();debug.dataset.fireballLevel=String(level);debug.click();key('2');
       const expected=generateIntegralSequence(getSpellAtLevel('fireball',level).problem,()=>.25);
@@ -349,6 +363,7 @@ test('bolt event flow refreshes five runes after each term, assembles every rank
   const random=Math.random;Math.random=()=>.25;
   try{
     await import('../src/game.js?bolt-events');
+    get('start-button').click();
     for(let level=1;level<=3;level++){
       get('restart').click();debug.dataset.boltLevel=String(level);debug.click();get('bolt').click();
       const expected=generateBoltSequence(getSpellAtLevel('bolt',level).problem,()=>.25);
@@ -431,6 +446,7 @@ test('shield key 3 casts every derivative rank and blocks real overlapping melee
   const random=Math.random;Math.random=()=>.25;
   try{
     await import('../src/game.js?shield-flow');
+    get('start-button').click();
     for(let rank=1;rank<=3;rank++){
       get('restart').click();mock.level('shield',rank);mock.key('3');
       const expected=generateBoltSequence(getSpellAtLevel('shield',rank).problem,()=>.25);
@@ -479,6 +495,7 @@ test('healing uses refreshed fireball-style integral runes, requires +C, and hea
   const random=Math.random;Math.random=()=>.25;
   try{
     await import('../src/game.js?healing-flow');
+    get('start-button').click();
     for(let rank=1;rank<=3;rank++){
       get('restart').click();mock.step();
       for(let frame=0;frame<300&&mock.hp()===100;frame++)mock.step();
@@ -524,9 +541,10 @@ test('end screens freeze their times and export the matching result through both
   const hook=`globalThis.__captureTest={get state(){return {p,runTimer,mode,gameOver};},reset,completeRun,hurtPlayer};`;
   const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('updateRuneScale();reset();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();requestAnimationFrame(loop);');
+    .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);');
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+    get('start-button').click();
     const t=globalThis.__captureTest;
     // Saving during normal combat has no effect.
     await get('victory-capture')._listeners.get('click')();assert.equal(downloads.length,0);
