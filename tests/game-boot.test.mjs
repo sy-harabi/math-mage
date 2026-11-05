@@ -141,13 +141,17 @@ test('rock game integration: stage transitions, landing, shields, airborne click
     for(let i=0;i<15;i++)t.tick(.05);
     assert.equal(t.state.p.hp,100,'moving away from the locked target avoids landing');
 
-    for(const shield of [false,true]){
-      t.reset();t.setPhase(6);t.state.p.shields=Number(shield);
-      const e=t.spawnEnemy('rock',t.state.p.x-300,t.state.p.y);e.jumpCooldown=0;
-      for(let i=0;i<25;i++)t.tick(.05);
-      assert.equal(t.state.p.hp,shield?100:74);assert.equal(t.state.p.shields,0);
-      assert.equal(e.action,'recoverJump');t.draw();
-    }
+    // Force a centered landing: randomized landings can legitimately miss the player.
+    const previousRandom=Math.random;Math.random=()=>0;
+    try{
+      for(const shield of [false,true]){
+        t.reset();t.setPhase(6);t.state.p.shields=Number(shield);
+        const e=t.spawnEnemy('rock',t.state.p.x-300,t.state.p.y);e.jumpCooldown=0;
+        for(let i=0;i<25;i++)t.tick(.05);
+        assert.equal(t.state.p.hp,shield?100:74);assert.equal(t.state.p.shields,0);
+        assert.equal(e.action,'recoverJump');t.draw();
+      }
+    }finally{Math.random=previousRandom;}
     t.reset();t.setPhase(7);const boss=t.state.enemies[0];boss.hp=0;t.killedEnemy(boss);
     assert.equal(t.state.mode,'victory');assert.equal(get('victory-overlay').hidden,false);
     t.tick(.05);assert.equal(t.state.enemies.filter(e=>e.type==='boss').length,0);
