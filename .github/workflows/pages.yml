@@ -25,6 +25,14 @@ jobs:
           node-version: 22
       - name: Validate math questions
         run: npm test
+      - name: Check release assets and write deployed revision
+        run: |
+          test -f index.html
+          test -f src/game.js
+          test -f src/styles.css
+          test -f src/display-mode.js
+          printf 'sha=%s\nrun_id=%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > deployment-info.txt
+          echo "Publishing commit $GITHUB_SHA"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload static files
@@ -34,3 +42,19 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify deployed revision
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            echo "Checking published revision (attempt ${attempt})"
+            published=$(curl -fsSL --max-time 15 -H 'Cache-Control: no-cache' "${PAGES_URL%/}/deployment-info.txt?run=${GITHUB_RUN_ID}&attempt=${attempt}" || true)
+            if printf '%s\n' "$published" | grep -Fqx "sha=$GITHUB_SHA"; then
+              echo "Verified live GitHub Pages at $PAGES_URL is commit $GITHUB_SHA"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Live GitHub Pages did not serve the expected commit $GITHUB_SHA"
+          exit 1
