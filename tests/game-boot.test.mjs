@@ -11,6 +11,14 @@ test('every element referenced by the game code exists in real HTML',()=>{
   for(const id of referenced) assert.ok(ids.has(id), `Missing index.html element: #${id}`);
 });
 
+
+// Fail explicitly if the game bootstrap changes instead of silently skipping test hooks.
+function assertGameTestHook(source, hook) {
+  const marker='syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);';
+  assert.ok(source.includes(marker),'Game bootstrap marker changed: update integration test hook');
+  return source.replace(marker,hook+marker);
+}
+
 function makeElement(id) {
   const listeners=new Map();
   return {
@@ -61,7 +69,7 @@ test('debug stage buttons jump safely through stages 1–7, keep the build, and 
       begin,tick,updateUI,selectDebugStage,hurtPlayer,completeRun};`;
     const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
       .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-      .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
+      .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
     try{
       await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
@@ -118,7 +126,7 @@ test('rock game integration: stage transitions, landing, shields, airborne click
     targetBolt(){mode='target';spell='bolt';activeCastConfig=getSpellAtLevel('bolt',3);}};`;
   const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);');
+    .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);');
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
@@ -552,7 +560,7 @@ test('end screens freeze their times and export the matching result through both
   const hook=`globalThis.__captureTest={get state(){return {p,runTimer,mode,gameOver};},reset,completeRun,hurtPlayer};`;
   const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('updateRuneScale();reset();showIntro();requestAnimationFrame(loop);',hook+'updateRuneScale();reset();showIntro();requestAnimationFrame(loop);');
+    .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);');
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
