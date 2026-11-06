@@ -77,7 +77,7 @@ const joystick = bindJoystick(
     if(vector.x||vector.y)touchTarget=null;
   }
 );
-const portraitPause = () => document.documentElement.classList.contains('mobile-portrait');
+const portraitPause = () => Boolean(document.documentElement?.classList?.contains('mobile-portrait'));
 const manualMoveActive = () => [...MOVE_KEYS].some(key=>keys.has(key)) || Boolean(joystickInput.x||joystickInput.y);
 
 function cameraUpdate() {
@@ -541,14 +541,14 @@ for(const name of [...SKILL_IDS,'cancel','restart']){
 if(DEBUG){
   const displayPanel=document.getElementById('debug-display-panel');
   displayPanel.hidden=false;
-  for(const button of displayPanel.querySelectorAll('[data-debug-ui]')){
+  for(const button of document.querySelectorAll('[data-debug-ui]')){
     button.addEventListener('click',()=>{
-      window.mathMageDisplay.setMode(button.dataset.debugUi);
+      window.mathMageDisplay?.setMode(button.dataset.debugUi);
       joystick.reset();touchTarget=null;
       updateRuneScale();
     });
   }
-  window.mathMageDisplay.applyMode();
+  window.mathMageDisplay?.applyMode?.();
   document.querySelectorAll('.debug-level-picker').forEach(el=>el.hidden=false);
   for(const button of document.querySelectorAll('[data-debug-stage]')){
     button.addEventListener('click',()=>selectDebugStage(Number(button.dataset.debugStage)));
@@ -661,7 +661,7 @@ function draw(){
   }
 }
 function updateUI(){
-  document.body.classList.toggle('touch-ui-paused',introActive||gameOver||mode==='upgrade'||mode==='victory');
+  document.body?.classList?.toggle('touch-ui-paused',introActive||gameOver||mode==='upgrade'||mode==='victory');
   dom.healthFill.style.width=(100*p.hp/p.maxHp)+'%';
   dom.healthLabel.textContent=`${p.hp} / ${p.maxHp}`;
   dom.healthMeter.setAttribute('aria-valuemax',String(p.maxHp));
