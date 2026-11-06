@@ -14,6 +14,7 @@ import { createLaserSegment, laserHitsPoint } from './laser.js';
 import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
+import { bindJoystick } from './mobile-controls.js?v=1.12.0';
 import { separateEnemies } from './enemy-collision.js?v=1.9.0';
 import { pickEnemyAt } from './targeting.js?v=1.9.0';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
@@ -67,6 +68,17 @@ let pointer = null, capturePending = false, introActive = false;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
 const distance = (a,b) => Math.hypot(a.x-b.x,a.y-b.y);
+// One captured pointer drives movement; other touches remain free for spells and rune answers.
+const joystickInput = {x:0,y:0};
+const joystick = bindJoystick(
+  document.getElementById('touch-joystick'), document.getElementById('joystick-thumb'),
+  vector => {
+    joystickInput.x=vector.x;joystickInput.y=vector.y;
+    if(vector.x||vector.y)touchTarget=null;
+  }
+);
+const portraitPause = window.matchMedia('(pointer: coarse) and (max-width: 1000px) and (orientation: portrait)');
+const manualMoveActive = () => [...MOVE_KEYS].some(key=>keys.has(key)) || Boolean(joystickInput.x||joystickInput.y);
 
 function cameraUpdate() {
   // Keep world framing fixed regardless of whether the ritual is visible.
@@ -96,7 +108,7 @@ function resetEncounter() {
   runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
   kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
   currentChoices=[];gameOver=false; nextEnemyId=1;
-  pointer=null;keys.clear();
+  pointer=null;keys.clear();joystick.reset();
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.deathOverlay.hidden=true;dom.mathHud.hidden=true;
   dom.victoryCapture.textContent=dom.deathCapture.textContent='캡처 저장 (PNG)';
 }
@@ -106,7 +118,7 @@ function reset() {
   say('',0); updateUI();
 }
 function showIntro() {
-  introActive=true;dom.introOverlay.hidden=false;keys.clear();touchTarget=null;
+  introActive=true;dom.introOverlay.hidden=false;keys.clear();touchTarget=null;joystick.reset();
   // Reuse the in-game lightning question renderer so the derivative format stays identical.
   dom.introBoltProblem.innerHTML=boltSequenceMathML({
     question:{data:{inputTerms:[{num:3,den:1,power:2},{num:2,den:1,power:1}]}},
@@ -152,7 +164,7 @@ function completeRun() {
   clearRitualFeedback();
   finishRunTimer(runTimer);
   mode='victory';spell=null;question=null;activeCastConfig=null;
-  touchTarget=null;keys.clear();dom.mathHud.hidden=true;
+  touchTarget=null;keys.clear();joystick.reset();dom.mathHud.hidden=true;
   dom.victoryTime.textContent=formatRunTime(runTimer.elapsedSeconds);
   dom.victoryStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
   dom.victoryOverlay.hidden=false;
@@ -298,7 +310,7 @@ function castFireball(target) {
 function openUpgrade() {
   currentChoices=selectUpgradeChoices(p);
   if(!currentChoices.length){progression.pendingUpgrades=0;return;}
-  mode='upgrade';touchTarget=null;keys.clear();
+  mode='upgrade';touchTarget=null;keys.clear();joystick.reset();
   dom.upgradeHeading.textContent=`캐릭터 Lv${progression.level} · 성장 선택`;
   dom.upgradeOptions.replaceChildren();
   for(const option of currentChoices){
@@ -332,7 +344,7 @@ function hurtPlayer(amount, message) {
   if(p.hp<=0){
     clearRitualFeedback();
     gameOver=true;finishRunTimer(runTimer);mode='idle';spell=null;question=null;activeCastConfig=null;
-    touchTarget=null;keys.clear();dom.mathHud.hidden=true;
+    touchTarget=null;keys.clear();joystick.reset();dom.mathHud.hidden=true;
     dom.deathTime.textContent=formatRunTime(runTimer.elapsedSeconds);
     dom.deathStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
     dom.deathOverlay.hidden=false;say('',0);
@@ -438,13 +450,17 @@ function moveLasers(wd) {
 function moveHero(wd) {
   let dx=Number(keys.has('d')||keys.has('arrowright'))-Number(keys.has('a')||keys.has('arrowleft'));
   let dy=Number(keys.has('s')||keys.has('arrowdown'))-Number(keys.has('w')||keys.has('arrowup'));
+  let usingJoystick=false;
+  if(!dx&&!dy&&(joystickInput.x||joystickInput.y)){
+    dx=joystickInput.x;dy=joystickInput.y;usingJoystick=true;
+  }
   if(!dx&&!dy&&touchTarget){
     const tx=touchTarget.x-p.x,ty=touchTarget.y-p.y,dist=Math.hypot(tx,ty);
     if(dist>9){dx=tx/dist;dy=ty/dist;}else touchTarget=null;
   }
   if(dx||dy){
     const length=Math.hypot(dx,dy);
-    const speed=220*movementMultiplier(p)*(p.failSlow>0?FAIL_SPEED_MULT:1);
+    const speed=220*movementMultiplier(p)*(p.failSlow>0?FAIL_SPEED_MULT:1)*(usingJoystick?Math.min(1,length):1);
     p.x=clamp(p.x+dx/length*speed*wd,25,WORLD_W-25);
     p.y=clamp(p.y+dy/length*speed*wd,25,WORLD_H-25);
     p.face=Math.atan2(dy,dx);
@@ -492,10 +508,10 @@ C.addEventListener('pointerdown',ev=>{
     const wp=worldPoint(t);
     if(spell==='fireball'){castFireball(wp);return;}
     const hit=pickEnemyAt(wp,enemies);
-    if(hit)castEnemy(hit);else touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:wp;
+    if(hit)castEnemy(hit);else touchTarget=manualMoveActive()?null:wp;
     return;
   }
-  touchTarget=[...MOVE_KEYS].some(key=>keys.has(key))?null:worldPoint(t);
+  touchTarget=manualMoveActive()?null:worldPoint(t);
 });
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',ev=>{
@@ -510,7 +526,7 @@ window.addEventListener('keydown',ev=>{
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
-window.addEventListener('blur',()=>{keys.clear();pointer=null;});
+window.addEventListener('blur',()=>{keys.clear();pointer=null;touchTarget=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.startButton.addEventListener('click',startGame);
 dom.victoryRestart.addEventListener('click',reset);
@@ -634,6 +650,7 @@ function draw(){
   }
 }
 function updateUI(){
+  document.body.classList.toggle('touch-ui-paused',introActive||gameOver||mode==='upgrade'||mode==='victory');
   dom.healthFill.style.width=(100*p.hp/p.maxHp)+'%';
   dom.healthLabel.textContent=`${p.hp} / ${p.maxHp}`;
   dom.healthMeter.setAttribute('aria-valuemax',String(p.maxHp));
@@ -689,8 +706,10 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    advanceRunTimer(runTimer,rawDt,!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
-    tick(Math.min(.05,rawDt));updateRunePosition();draw();updateUI();
+    const pausedForRotation=portraitPause.matches;
+    advanceRunTimer(runTimer,rawDt,!pausedForRotation&&!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
+    if(!pausedForRotation)tick(Math.min(.05,rawDt));
+    updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
 }
