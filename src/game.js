@@ -77,7 +77,7 @@ const joystick = bindJoystick(
     if(vector.x||vector.y)touchTarget=null;
   }
 );
-const portraitPause = window.matchMedia('(pointer: coarse) and (max-width: 1000px) and (orientation: portrait)');
+const portraitPause = () => document.documentElement.classList.contains('mobile-portrait');
 const manualMoveActive = () => [...MOVE_KEYS].some(key=>keys.has(key)) || Boolean(joystickInput.x||joystickInput.y);
 
 function cameraUpdate() {
@@ -707,7 +707,7 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    const pausedForRotation=portraitPause.matches;
+    const pausedForRotation=portraitPause();
     advanceRunTimer(runTimer,rawDt,!pausedForRotation&&!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
     if(!pausedForRotation)tick(Math.min(.05,rawDt));
     updateRunePosition();draw();updateUI();
