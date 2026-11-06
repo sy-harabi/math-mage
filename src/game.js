@@ -78,7 +78,6 @@ const joystick = bindJoystick(
     joystickInput.x=vector.x;joystickInput.y=vector.y;
   }
 );
-const portraitPause = () => Boolean(document.documentElement?.classList?.contains('mobile-portrait'));
 
 function cameraUpdate() {
   // Keep world framing fixed regardless of whether the ritual is visible.
@@ -92,8 +91,11 @@ function updateRunePosition() {
   dom.runeFrame.style.top=((p.y-camera.y)/H*100)+'%';
 }
 function updateRuneScale(){
-  // Keep the five rune choices at the same scale as the visible world.
-  dom.runeFrame.style.transform=`translate(-50%,-50%) scale(${C.getBoundingClientRect().width/W})`;
+  const rect=C.getBoundingClientRect();
+  const portrait=Boolean(document.documentElement?.classList?.contains('mobile-portrait'));
+  // Portrait phones use the spare vertical space to keep touch answers readable.
+  const scale=portrait ? Math.min(rect.width/620,rect.height/550) : rect.width/W;
+  dom.runeFrame.style.transform=`translate(-50%,-50%) scale(${scale})`;
 }
 function syncCanvasViewport(){
   const mobile=Boolean(document.documentElement?.classList?.contains('mobile-layout'));
@@ -722,9 +724,8 @@ function loop(ts){
   if(!last)last=ts;
   const rawDt=Math.max(0,(ts-last)/1000);last=ts;
   if(!document.hidden){
-    const pausedForRotation=portraitPause();
-    advanceRunTimer(runTimer,rawDt,!pausedForRotation&&!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
-    if(!pausedForRotation)tick(Math.min(.05,rawDt));
+    advanceRunTimer(runTimer,rawDt,!introActive&&!gameOver&&mode!=='victory'&&mode!=='upgrade');
+    tick(Math.min(.05,rawDt));
     updateRunePosition();draw();updateUI();
   }
   requestAnimationFrame(loop);
