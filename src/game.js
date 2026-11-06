@@ -539,6 +539,16 @@ for(const name of [...SKILL_IDS,'cancel','restart']){
 }
 // Debug selectors do not appear in normal gameplay; all upgrades normally require XP.
 if(DEBUG){
+  const displayPanel=document.getElementById('debug-display-panel');
+  displayPanel.hidden=false;
+  for(const button of displayPanel.querySelectorAll('[data-debug-ui]')){
+    button.addEventListener('click',()=>{
+      window.mathMageDisplay.setMode(button.dataset.debugUi);
+      joystick.reset();touchTarget=null;
+      updateRuneScale();
+    });
+  }
+  window.mathMageDisplay.applyMode();
   document.querySelectorAll('.debug-level-picker').forEach(el=>el.hidden=false);
   for(const button of document.querySelectorAll('[data-debug-stage]')){
     button.addEventListener('click',()=>selectDebugStage(Number(button.dataset.debugStage)));
