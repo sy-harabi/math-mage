@@ -140,7 +140,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   html.mobile-layout,html.mobile-layout body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
   html.mobile-layout body{display:block}
   html.mobile-layout #wrap{--hud-top:clamp(32px,9dvh,44px);--control-gap:clamp(8px,2dvh,17px);--joy-size:clamp(80px,min(26dvh,15vw),130px);--skill-width:clamp(48px,min(13dvh,8.5vw),72px);--skill-height:clamp(53px,min(14dvh,9vw),78px);position:relative;width:100vw;height:100dvh;min-width:0;padding:0;border:0;border-radius:0;box-shadow:none;overflow:hidden}
-  html.mobile-layout .game-header{position:absolute;z-index:9;left:0;right:0;top:0;height:var(--hud-top);display:flex;align-items:center;gap:6px;margin:0;padding:3px max(8px,env(safe-area-inset-left));background:#080d20ed}
+  html.mobile-layout .game-header{position:absolute;z-index:5;left:0;right:0;top:0;height:var(--hud-top);display:flex;align-items:center;gap:6px;margin:0;padding:3px max(8px,env(safe-area-inset-left));background:#080d20ed}
   html.mobile-layout .hero-hud{gap:5px}
   html.mobile-layout .mage-portrait{width:26px;height:26px}
   html.mobile-layout .hero-vitals{width:131px}
@@ -152,7 +152,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   html.mobile-layout .run-clock>span{display:none}
   html.mobile-layout .run-clock>b{font-size:17px}
   html.mobile-layout .game-brand{display:none}
-  html.mobile-layout #stage{position:absolute;inset:var(--hud-top) 0 0;width:100%;height:auto;transform:none;margin:0;aspect-ratio:auto;border:0;border-radius:0;overflow:hidden;touch-action:auto}
+  html.mobile-layout #stage{position:absolute;inset:0;width:100%;height:100%;transform:none;margin:0;aspect-ratio:auto;border:0;border-radius:0;overflow:hidden;touch-action:none}
   html.mobile-layout #stage canvas{width:100%;height:100%;aspect-ratio:auto}
   html.mobile-layout #buttons{position:absolute;z-index:10;left:auto;top:auto;right:max(var(--control-gap),env(safe-area-inset-right));bottom:max(var(--control-gap),env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,var(--skill-width));grid-template-rows:repeat(2,var(--skill-height));gap:clamp(4px,1dvh,8px);margin:0}
   html.mobile-layout .skill-button{width:var(--skill-width);min-height:0;height:var(--skill-height);gap:1px;padding:3px 1px 5px;border-radius:10px;touch-action:manipulation}
@@ -165,14 +165,14 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   html.mobile-layout .joystick-guide{position:absolute;inset:16px;border-radius:50%;border:1px dashed #68efff53;pointer-events:none}
   html.mobile-layout .joystick-thumb{width:42%;height:42%;border:2px solid #bbfaff;border-radius:50%;background:linear-gradient(140deg,#338ca8,#153e68);box-shadow:0 0 15px #68efff4d;pointer-events:none;will-change:transform}
   html.mobile-layout body.touch-ui-paused .touch-joystick,html.mobile-layout body.touch-ui-paused #buttons{opacity:0;pointer-events:none}
-  html.mobile-layout .game-footer{position:absolute;right:max(5px,env(safe-area-inset-right));top:3px;z-index:10;min-height:0;gap:0}
+  html.mobile-layout .game-footer{position:absolute;right:max(5px,env(safe-area-inset-right));top:calc(var(--hud-top) + 3px);z-index:5;min-height:0;gap:0}
   html.mobile-layout .game-footer #status{display:none}
   html.mobile-layout .secondary-controls{gap:4px}
   html.mobile-layout .secondary-controls button{padding:4px 5px;font-size:9px}
   html.mobile-layout .run-stats{position:absolute;z-index:8;left:50%;bottom:5px;transform:translateX(-50%);gap:8px;margin:0;font-size:9px;white-space:nowrap;pointer-events:none}
   html.mobile-layout #xp-meter{position:absolute;z-index:8;left:0;right:0;bottom:0;transform:none;width:100%;height:3px}
-  html.mobile-layout #toast{top:5px;padding:4px 7px;font-size:10px}
-  html.mobile-layout #slow{right:4px;top:4px;font-size:9px}
+  html.mobile-layout #toast{top:calc(var(--hud-top) + 4px);padding:4px 7px;font-size:10px}
+  html.mobile-layout #slow{right:4px;top:calc(var(--hud-top) + 4px);font-size:9px}
   html.mobile-layout .math-choice{width:130px;height:112px;padding:12px 8px;touch-action:manipulation}
   html.mobile-layout .math-problem{min-height:100px;gap:4px}
   html.mobile-layout .rune-core{width:330px}
@@ -234,3 +234,23 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
 .debug-display-panel small{display:block;margin-top:6px;font-size:10px;color:#9ebcd1;line-height:1.5}
 html.mobile-layout .debug-display-panel{top:max(40px,env(safe-area-inset-top));right:max(4px,env(safe-area-inset-right))}
 html.mobile-layout.mobile-portrait .debug-display-panel{top:max(8px,env(safe-area-inset-top))}
+
+/* All in-game information stays inside the canvas stage on PC and touch screens. */
+#stage{overflow:hidden;margin-bottom:0}
+.game-header{position:absolute;z-index:5;top:0;left:0;right:0;height:62px;padding:5px 12px;margin:0;background:linear-gradient(#080d20f2,#080d20a0 70%,transparent);pointer-events:none}
+#buttons{top:auto;bottom:14px;left:0;right:0;z-index:3;margin:0}
+.game-footer{position:absolute;z-index:5;top:68px;right:9px;left:9px;min-height:0}
+.game-footer #status{max-width:60%;text-shadow:0 1px 3px #000}
+.run-stats{position:absolute;z-index:5;bottom:3px;left:10px;margin:0;text-shadow:0 1px 3px #000;pointer-events:none}
+#xp-meter{position:absolute;z-index:5;bottom:0;left:0;right:0;height:3px}
+#toast{top:70px}
+#slow{top:70px}
+html.mobile-layout .game-header{height:var(--hud-top);padding:3px max(8px,env(safe-area-inset-left));background:linear-gradient(#080d20f2,#080d20a0)}
+html.mobile-layout #buttons{z-index:5;top:auto;bottom:max(var(--control-gap),env(safe-area-inset-bottom));left:auto;right:max(var(--control-gap),env(safe-area-inset-right))}
+html.mobile-layout .game-footer{top:calc(var(--hud-top) + 3px);right:max(5px,env(safe-area-inset-right));left:auto;z-index:5}
+html.mobile-layout .run-stats{left:50%;bottom:5px;transform:translateX(-50%)}
+html.mobile-layout #xp-meter{left:0;right:0;bottom:0;width:100%}
+html.mobile-layout #toast{top:calc(var(--hud-top) + 4px)}
+html.mobile-layout #slow{top:calc(var(--hud-top) + 4px)}
+html.mobile-layout #stage{inset:0;width:100%;height:100%}
+html.mobile-layout #stage canvas{width:100%;height:100%;aspect-ratio:auto}
