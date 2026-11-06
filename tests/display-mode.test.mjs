@@ -82,7 +82,7 @@ test('override is restricted to debug mode',()=>{
   assert.equal(browser.state.url.searchParams.get('ui'),'mobile');
 });
 
-test('forced mobile portrait pauses until rotation, without returning to PC layout',()=>{
+test('device rotation updates portrait layout class without returning to PC mode',()=>{
   const browser=createBrowser('https://example.test/?debug=1&ui=mobile',{
     width:393,height:873,orientation:'portrait-primary'
   });
