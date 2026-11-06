@@ -15,6 +15,8 @@ import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { bindJoystick } from './mobile-controls.js?v=1.12.0';
+import { bindTouchAction } from './touch-actions.js?v=1.13.3';
+import { requestGameFullscreen } from './fullscreen.js?v=1.13.3';
 import { canvasViewport } from './responsive-viewport.js?v=1.13.2';
 import { separateEnemies } from './enemy-collision.js?v=1.9.0';
 import { pickEnemyAt } from './targeting.js?v=1.9.0';
@@ -60,6 +62,7 @@ const dom = {
   mathProblem: document.getElementById('math-problem'), mathAnswers: document.getElementById('math-answers'),
   introOverlay: document.getElementById('intro-overlay'), introBoltProblem: document.getElementById('intro-bolt-problem'),
   startButton: document.getElementById('start-button'),
+  fullscreenToggle: document.getElementById('fullscreen-toggle'),
 };
 const camera = {x: 0, y: 0};
 const keys = new Set();
@@ -139,8 +142,23 @@ function showIntro() {
   },'번개');
   updateUI();
 }
+const gameStage=document.getElementById('stage');
+function refreshFullscreenButton(){
+  dom.fullscreenToggle.textContent=document.fullscreenElement===gameStage?'창모드':'전체화면';
+}
+function enterFullscreenFromGesture(){
+  // Invoke immediately while a trusted touch/click is active; the browser may deny it.
+  void requestGameFullscreen(gameStage,document).then(success=>{
+    refreshFullscreenButton();
+    syncCanvasViewport();
+    if(!success&&document.documentElement?.classList?.contains('mobile-layout')){
+      say('전체화면이 제한된 브라우저입니다. 홈 화면에 추가 후 실행해 보세요.',4);
+    }
+  });
+}
 function startGame() {
   if(!introActive)return;
+  if(document.documentElement?.classList?.contains('mobile-layout'))enterFullscreenFromGesture();
   introActive=false;dom.introOverlay.hidden=true;last=0;updateUI();
 }
 function startRun(number=1) {
@@ -237,7 +255,7 @@ function displayMathQuestion(keepChoices=false) {
       const formula=document.createElement('span');formula.className='answer-formula';
       formula.innerHTML=integral?integralChoiceMathML(question,index,leadingPlus):polynomialMathML(question.data.choiceTermPolys[index],question.data.choiceHasConstant[index],leadingPlus);
       button.append(key,formula);
-      button.addEventListener('click',()=>selectAnswer(index));
+      bindTouchAction(button,()=>selectAnswer(index));
       dom.mathAnswers.append(button);
     });
   }
@@ -543,8 +561,22 @@ dom.deathRestart.addEventListener('click',reset);
 dom.victoryCapture.addEventListener('click',captureResult);
 dom.deathCapture.addEventListener('click',captureResult);
 for(const name of [...SKILL_IDS,'cancel','restart']){
-  dom[name].addEventListener('click',()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),fireball:()=>begin('fireball'),shield:()=>begin('shield'),cancel,restart:reset})[name]());
+  const action=()=>({bolt:()=>begin('bolt'),heal:()=>begin('heal'),fireball:()=>begin('fireball'),shield:()=>begin('shield'),cancel,restart:reset})[name]();
+  if(SKILL_IDS.includes(name))bindTouchAction(dom[name],action);
+  else dom[name].addEventListener('click',action);
 }
+dom.fullscreenToggle.addEventListener('click',()=>{
+  if(document.fullscreenElement===gameStage){
+    try{void Promise.resolve(document.exitFullscreen?.()).catch(()=>{});}catch{}
+    return;
+  }
+  enterFullscreenFromGesture();
+});
+document.addEventListener('fullscreenchange',()=>{
+  refreshFullscreenButton();
+  syncCanvasViewport();
+});
+refreshFullscreenButton();
 // Debug selectors do not appear in normal gameplay; all upgrades normally require XP.
 if(DEBUG){
   const displayPanel=document.getElementById('debug-display-panel');
