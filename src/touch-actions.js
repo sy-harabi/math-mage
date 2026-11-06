@@ -14,7 +14,7 @@ export function bindTouchAction(button, activate, now = () => Date.now()) {
   button.addEventListener('click', event => {
     if (button.disabled) return;
     // Keyboard click has detail=0. It must always work, even right after touch.
-    if (event.detail !== 0 && now() - lastTouch < 800) return;
+    if (event?.detail !== 0 && now() - lastTouch < 800) return;
     activate();
   });
 }
