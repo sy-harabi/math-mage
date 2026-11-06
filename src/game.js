@@ -15,6 +15,7 @@ import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { bindJoystick } from './mobile-controls.js?v=1.12.0';
+import { canvasViewport } from './responsive-viewport.js?v=1.13.0';
 import { separateEnemies } from './enemy-collision.js?v=1.9.0';
 import { pickEnemyAt } from './targeting.js?v=1.9.0';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
@@ -26,7 +27,8 @@ import { NEON, drawNeonArena, drawNeonMage, drawNeonSlime, drawLaserWarning, dra
 (() => {
 'use strict';
 const C = document.getElementById('game'), ctx = C.getContext('2d');
-const W = C.width, H = C.height, WORLD_W = 3000, WORLD_H = 2200, TWO = Math.PI * 2;
+let W = C.width, H = C.height;
+const WORLD_W = 3000, WORLD_H = 2200, TWO = Math.PI * 2;
 const MOVE_KEYS = new Set(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright']);
 const FAIL_SLOW_SECONDS = 1.5, FAIL_SPEED_MULT = .5;
 const DEBUG = new URLSearchParams(window.location.search).get('debug') === '1';
@@ -63,7 +65,7 @@ const camera = {x: 0, y: 0};
 const keys = new Set();
 let p, enemies, particles, bolts, lasers, kills, mode, spell, question, activeCastConfig, integralSequence, boltSequence, explosions;
 let stage, progression, runTimer, spawnTimer, currentChoices, gameOver, last = 0;
-let toastUntil = 0, touchTarget = null, nextEnemyId = 1;
+let toastUntil = 0, nextEnemyId = 1;
 let pointer = null, capturePending = false, introActive = false;
 const rnd = (a,b) => Math.floor(Math.random() * (b-a+1)) + a;
 const clamp = (v,lo,hi) => Math.max(lo, Math.min(hi,v));
@@ -74,11 +76,9 @@ const joystick = bindJoystick(
   document.getElementById('touch-joystick'), document.getElementById('joystick-thumb'),
   vector => {
     joystickInput.x=vector.x;joystickInput.y=vector.y;
-    if(vector.x||vector.y)touchTarget=null;
   }
 );
 const portraitPause = () => Boolean(document.documentElement?.classList?.contains('mobile-portrait'));
-const manualMoveActive = () => [...MOVE_KEYS].some(key=>keys.has(key)) || Boolean(joystickInput.x||joystickInput.y);
 
 function cameraUpdate() {
   // Keep world framing fixed regardless of whether the ritual is visible.
@@ -92,8 +92,19 @@ function updateRunePosition() {
   dom.runeFrame.style.top=((p.y-camera.y)/H*100)+'%';
 }
 function updateRuneScale(){
-  // Match CSS-sized runes to the fixed world viewport, never to the spell mode.
+  // Keep the five rune choices at the same scale as the visible world.
   dom.runeFrame.style.transform=`translate(-50%,-50%) scale(${C.getBoundingClientRect().width/W})`;
+}
+function syncCanvasViewport(){
+  const mobile=Boolean(document.documentElement?.classList?.contains('mobile-layout'));
+  const rect=C.getBoundingClientRect();
+  const size=mobile?canvasViewport(rect.width,rect.height):{width:960,height:600};
+  if(W!==size.width||H!==size.height){
+    W=size.width;H=size.height;
+    C.width=W;C.height=H;
+    if(p)cameraUpdate();
+  }
+  updateRuneScale();
 }
 function say(message, seconds=2.5) {
   dom.toast.textContent = message;
@@ -106,7 +117,7 @@ function newPlayer() {
 function resetEncounter() {
   clearRitualFeedback();
   runTimer=createRunTimer(); enemies=[]; particles=[]; bolts=[]; lasers=[]; explosions=[]; integralSequence=null;
-  kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; touchTarget=null;
+  kills=0; mode='idle'; spell=null; question=null; activeCastConfig=null; boltSequence=null; 
   currentChoices=[];gameOver=false; nextEnemyId=1;
   pointer=null;keys.clear();joystick.reset();
   dom.upgradeOverlay.hidden=true;dom.victoryOverlay.hidden=true;dom.deathOverlay.hidden=true;dom.mathHud.hidden=true;
@@ -118,7 +129,7 @@ function reset() {
   say('',0); updateUI();
 }
 function showIntro() {
-  introActive=true;dom.introOverlay.hidden=false;keys.clear();touchTarget=null;joystick.reset();
+  introActive=true;dom.introOverlay.hidden=false;keys.clear();joystick.reset();
   // Reuse the in-game lightning question renderer so the derivative format stays identical.
   dom.introBoltProblem.innerHTML=boltSequenceMathML({
     question:{data:{inputTerms:[{num:3,den:1,power:2},{num:2,den:1,power:1}]}},
@@ -164,7 +175,7 @@ function completeRun() {
   clearRitualFeedback();
   finishRunTimer(runTimer);
   mode='victory';spell=null;question=null;activeCastConfig=null;
-  touchTarget=null;keys.clear();joystick.reset();dom.mathHud.hidden=true;
+  keys.clear();joystick.reset();dom.mathHud.hidden=true;
   dom.victoryTime.textContent=formatRunTime(runTimer.elapsedSeconds);
   dom.victoryStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
   dom.victoryOverlay.hidden=false;
@@ -310,7 +321,7 @@ function castFireball(target) {
 function openUpgrade() {
   currentChoices=selectUpgradeChoices(p);
   if(!currentChoices.length){progression.pendingUpgrades=0;return;}
-  mode='upgrade';touchTarget=null;keys.clear();joystick.reset();
+  mode='upgrade';keys.clear();joystick.reset();
   dom.upgradeHeading.textContent=`캐릭터 Lv${progression.level} · 성장 선택`;
   dom.upgradeOptions.replaceChildren();
   for(const option of currentChoices){
@@ -344,7 +355,7 @@ function hurtPlayer(amount, message) {
   if(p.hp<=0){
     clearRitualFeedback();
     gameOver=true;finishRunTimer(runTimer);mode='idle';spell=null;question=null;activeCastConfig=null;
-    touchTarget=null;keys.clear();joystick.reset();dom.mathHud.hidden=true;
+    keys.clear();joystick.reset();dom.mathHud.hidden=true;
     dom.deathTime.textContent=formatRunTime(runTimer.elapsedSeconds);
     dom.deathStats.textContent=`처치 ${kills}마리 · 캐릭터 Lv${progression.level}`;
     dom.deathOverlay.hidden=false;say('',0);
@@ -454,10 +465,6 @@ function moveHero(wd) {
   if(!dx&&!dy&&(joystickInput.x||joystickInput.y)){
     dx=joystickInput.x;dy=joystickInput.y;usingJoystick=true;
   }
-  if(!dx&&!dy&&touchTarget){
-    const tx=touchTarget.x-p.x,ty=touchTarget.y-p.y,dist=Math.hypot(tx,ty);
-    if(dist>9){dx=tx/dist;dy=ty/dist;}else touchTarget=null;
-  }
   if(dx||dy){
     const length=Math.hypot(dx,dy);
     const speed=220*movementMultiplier(p)*(p.failSlow>0?FAIL_SPEED_MULT:1)*(usingJoystick?Math.min(1,length):1);
@@ -509,10 +516,9 @@ C.addEventListener('pointerdown',ev=>{
     if(spell==='fireball'){castFireball(wp);return;}
     const touchPadding=ev.pointerType==='touch'?Math.max(20,28*W/C.getBoundingClientRect().width):20;
     const hit=pickEnemyAt(wp,enemies,touchPadding);
-    if(hit)castEnemy(hit);else touchTarget=manualMoveActive()?null:wp;
+    if(hit)castEnemy(hit);
     return;
   }
-  touchTarget=manualMoveActive()?null:worldPoint(t);
 });
 C.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',ev=>{
@@ -520,14 +526,14 @@ window.addEventListener('keydown',ev=>{
   if(introActive){if(key==='enter'){ev.preventDefault();if(!ev.repeat)startGame();}return;}
   if(MOVE_KEYS.has(key)||/^[1-5]$/.test(key)||key==='escape')ev.preventDefault();
   if(mode==='upgrade'||mode==='victory'||gameOver){if(key==='r'&&(gameOver||mode==='victory'))reset();return;}
-  keys.add(key);if(MOVE_KEYS.has(key))touchTarget=null;
+  keys.add(key);
   if(ev.repeat)return;
   if(mode==='question'&&/^[1-5]$/.test(key)){selectAnswer(Number(key)-1);return;}
   if(key==='1')begin('bolt');if(key==='2')begin('fireball');if(key==='3')begin('shield');if(key==='4')begin('heal');
   if(key==='escape')cancel();if(key==='r'&&gameOver)reset();
 });
 window.addEventListener('keyup',ev=>keys.delete(ev.key.toLowerCase()));
-window.addEventListener('blur',()=>{keys.clear();pointer=null;touchTarget=null;});
+window.addEventListener('blur',()=>{keys.clear();pointer=null;});
 document.addEventListener('visibilitychange',()=>{last=0;keys.clear();});
 dom.startButton.addEventListener('click',startGame);
 dom.victoryRestart.addEventListener('click',reset);
@@ -544,8 +550,8 @@ if(DEBUG){
   for(const button of document.querySelectorAll('[data-debug-ui]')){
     button.addEventListener('click',()=>{
       window.mathMageDisplay?.setMode(button.dataset.debugUi);
-      joystick.reset();touchTarget=null;
-      updateRuneScale();
+      joystick.reset();
+      syncCanvasViewport();
     });
   }
   window.mathMageDisplay?.applyMode?.();
@@ -607,7 +613,6 @@ function draw(){
   C.style.cursor=mode==='target'&&!gameOver?(selected?'pointer':'crosshair'):'';
   ctx.clearRect(0,0,W,H);drawNeonArena(ctx,camera,W,H);
   ctx.save();ctx.translate(-camera.x,-camera.y);
-  if(touchTarget)circle(touchTarget.x,touchTarget.y,9,null,'#729cbd',1);
   const fireballCenter=mode==='target'&&spell==='fireball'?(pointer?worldPoint(pointer):p):null;
   const fireballTargets=new Set(fireballCenter?resolveAreaHits(fireballCenter,enemies,activeCastConfig.radius,activeCastConfig.power).map(hit=>hit.enemy):[]);
   enemies.filter(e=>e.type==='ranged').forEach(e=>drawLaserWarning(ctx,e,ENEMY_TYPES.ranged));
@@ -724,8 +729,9 @@ function loop(ts){
   }
   requestAnimationFrame(loop);
 }
-if(typeof ResizeObserver!=='undefined')new ResizeObserver(updateRuneScale).observe(C);
-else window.addEventListener('resize',updateRuneScale);
-updateRuneScale();reset();showIntro();requestAnimationFrame(loop);
+if(typeof ResizeObserver!=='undefined')new ResizeObserver(syncCanvasViewport).observe(document.getElementById('stage'));
+window.addEventListener('resize',syncCanvasViewport);
+window.addEventListener('orientationchange',syncCanvasViewport);
+syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);
 })();
 
