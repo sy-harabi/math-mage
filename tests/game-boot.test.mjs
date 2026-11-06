@@ -67,9 +67,9 @@ test('debug stage buttons jump safely through stages 1–7, keep the build, and 
     globalThis.requestAnimationFrame=()=>{};
     const hook=`globalThis.__stageTest={get state(){return {p,progression,stage,mode,runTimer,enemies,lasers,bolts,explosions,gameOver};},
       begin,tick,updateUI,selectDebugStage,hurtPlayer,completeRun};`;
-    const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+    const source=assertGameTestHook(readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
       .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-      .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);')+`\n// debug stage test: ${debug}`;
+       ,hook)+`\n// debug stage test: ${debug}`;
     try{
       await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
@@ -124,9 +124,9 @@ test('rock game integration: stage transitions, landing, shields, airborne click
     reset,tick,draw,updateUI,updateHiddenPhase,killedEnemy,spawnEnemy,keys,
     setPhase(number,progress=0){stage=createStage(number);stage.progress=progress;enemies=[];spawnTimer=100;updateHiddenPhase();},
     targetBolt(){mode='target';spell='bolt';activeCastConfig=getSpellAtLevel('bolt',3);}};`;
-  const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+  const source=assertGameTestHook(readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);');
+     ,hook);
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
@@ -558,9 +558,9 @@ test('end screens freeze their times and export the matching result through both
   },body:{append(){}},querySelectorAll:()=>[],addEventListener(){},hidden:false};
   globalThis.requestAnimationFrame=()=>{};
   const hook=`globalThis.__captureTest={get state(){return {p,runTimer,mode,gameOver};},reset,completeRun,hurtPlayer};`;
-  const source=readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
+  const source=assertGameTestHook(readFileSync(new URL('../src/game.js',import.meta.url),'utf8')
     .replaceAll("from './",`from '${new URL('../src/',import.meta.url).href}`)
-    .replace('syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);',hook+'syncCanvasViewport();reset();showIntro();requestAnimationFrame(loop);');
+     ,hook);
   try{
     await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
     get('start-button').click();
