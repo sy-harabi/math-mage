@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>아브라칼큘러스!</title>
 <script src="./src/display-mode.js?v=1.12.2"></script>
-<link rel="stylesheet" href="./src/styles.css?v=1.12.2">
+<link rel="stylesheet" href="./src/styles.css?v=1.13.0">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -28,7 +28,7 @@
       <div class="intro-section intro-controls">
         <h3>조작 방법</h3>
         <dl>
-          <div><dt>이동</dt><dd><span class="desktop-only">WASD 또는 가고자 하는 곳 클릭</span><span class="mobile-only">왼쪽 가상 조이스틱</span></dd></div>
+          <div><dt>이동</dt><dd><span class="desktop-only">WASD 또는 방향키</span><span class="mobile-only">왼쪽 가상 조이스틱</span></dd></div>
           <div><dt>타겟 지정</dt><dd><span class="desktop-only">마우스 클릭</span><span class="mobile-only">몬스터 또는 위치 터치</span></dd></div>
           <div><dt>마법 사용</dt><dd><span class="desktop-only">하단 마법 아이콘 클릭 또는 숫자키 1~4</span><span class="mobile-only">오른쪽 스킬 버튼 터치</span></dd></div>
         </dl>
@@ -74,7 +74,6 @@
     <div class="result-actions"><button type="button" id="death-capture">캡처 저장 (PNG)</button><button type="button" id="death-restart">다시 도전</button></div>
   </div>
 </div>
-</div>
 <div id="buttons" aria-label="마법 스킬">
 <button id="bolt" class="skill-button bolt-skill" aria-label="번개 마법" title="1 · 번개"><kbd>1</kbd><svg class="skill-icon" aria-hidden="true"><use href="#icon-bolt"/></svg><strong>번개</strong><span class="skill-state" id="bolt-state">Lv1 · 준비</span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="bolt-fill"></span></span></button>
 <button id="fireball" disabled class="skill-button locked fireball-skill" aria-label="파이어볼 마법" title="2 · 화염구"><kbd>2</kbd><svg class="skill-icon" aria-hidden="true"><use href="#icon-fireball"/></svg><strong>화염구</strong><span class="skill-state" id="fireball-state">미습득</span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="fireball-fill"></span></span></button>
@@ -82,6 +81,7 @@
 <button id="heal" disabled class="skill-button locked heal-skill" aria-label="회복 마법" title="4 · 힐"><kbd>4</kbd><svg class="skill-icon" aria-hidden="true"><use href="#icon-heal"/></svg><strong>힐</strong><span class="skill-state" id="heal-state">미습득</span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="heal-fill"></span></span></button>
 </div>
 <div id="touch-joystick" class="touch-joystick" role="group" aria-label="이동 조이스틱"><div class="joystick-guide"></div><div id="joystick-thumb" class="joystick-thumb"></div></div>
+</div><!-- /#stage: touch controls overlay the actual game area -->
 <div class="game-footer"><span id="status"></span><div class="secondary-controls"><button id="cancel">Esc · 취소</button><button id="restart">R · 다시 시작</button></div></div>
 <div class="run-stats"><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span><span>XP <b id="xp-label">0/12</b></span></div>
 <div id="xp-meter" aria-label="다음 레벨 진행도"><div id="xp-progress-fill"></div></div>
@@ -102,5 +102,5 @@
 <div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 </div>
 <div id="mobile-rotate-notice" role="status"><strong>휴대전화를 가로로 돌려주세요</strong><span>가로 화면에서 조이스틱과 스킬 버튼으로 플레이할 수 있습니다.</span></div>
-<script type="module" src="./src/game.js?v=1.12.2"></script></body></html>
+<script type="module" src="./src/game.js?v=1.13.0"></script></body></html>
 
