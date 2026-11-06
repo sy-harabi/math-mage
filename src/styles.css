@@ -254,3 +254,6 @@ html.mobile-layout #toast{top:calc(var(--hud-top) + 4px)}
 html.mobile-layout #slow{top:calc(var(--hud-top) + 4px)}
 html.mobile-layout #stage{inset:0;width:100%;height:100%}
 html.mobile-layout #stage canvas{width:100%;height:100%;aspect-ratio:auto}
+
+/* Dynamic world bounds also support portrait screens; no rotation blocker. */
+html.mobile-layout.mobile-portrait #mobile-rotate-notice{display:none!important}
