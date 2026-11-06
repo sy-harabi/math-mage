@@ -13,7 +13,7 @@ test('every gameplay HUD element lives inside the battlefield',()=>{
   for(const id of ['game','health-meter','run-time','character-level','shield-count',
      'kills','enemies-count','xp-label','xp-meter','buttons','touch-joystick','joystick-thumb',
      'math-cast-hud','intro-overlay','upgrade-overlay','death-overlay','victory-overlay',
-     'status','cancel','restart']){
+     'status','cancel','restart','debug-display-panel','stage-picker']){
     const index=html.indexOf('id="'+id+'"');
     assert.ok(index>stageStart && index<stageEnd, '#'+id+' is outside #stage');
   }
@@ -24,7 +24,7 @@ test('landscape and portrait mobile stages use the full browser viewport',()=>{
   assert.match(css,/html\.mobile-layout #stage canvas\{width:100%;height:100%;aspect-ratio:auto\}/);
   assert.match(css,/html\.mobile-layout #buttons\{z-index:5;top:auto;bottom:/);
   assert.match(css,/html\.mobile-layout \.touch-joystick\{position:absolute/);
-  assert.match(css,/html\.mobile-layout\.mobile-portrait #mobile-rotate-notice\{display:none!important\}/);
+  assert.doesNotMatch(html, /id="mobile-rotate-notice"/);
 });
 
 test('tap-to-move destination and marker are completely removed',()=>{
