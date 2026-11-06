@@ -3,7 +3,30 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>아브라칼큘러스!</title>
-<link rel="stylesheet" href="./src/styles.css?v=1.12.0">
+<script>
+// Recognize phone browsers even when they request a desktop-sized viewport.
+(() => {
+  const matches = query => window.matchMedia(query).matches;
+  const userAgent = navigator.userAgent || '';
+  const touch = navigator.maxTouchPoints > 0 || matches('(any-pointer: coarse)');
+  const phone = navigator.userAgentData?.mobile === true || /iPhone|iPod|Android.*Mobile/i.test(userAgent);
+  const smallTouchScreen = touch && (
+    Math.min(screen.width || Infinity, screen.height || Infinity) <= 600 ||
+    matches('(max-width: 1000px)')
+  );
+  if (!phone && !smallTouchScreen) return;
+  document.documentElement.classList.add('mobile-layout');
+  const refreshOrientation = () => {
+    const type = screen.orientation?.type;
+    const portrait = type ? type.startsWith('portrait') : matches('(orientation: portrait)');
+    document.documentElement.classList.toggle('mobile-portrait', portrait);
+  };
+  refreshOrientation();
+  window.addEventListener('resize', refreshOrientation);
+  screen.orientation?.addEventListener?.('change', refreshOrientation);
+})();
+</script>
+<link rel="stylesheet" href="./src/styles.css?v=1.12.1">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -92,5 +115,5 @@
 <div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 </div>
 <div id="mobile-rotate-notice" role="status"><strong>휴대전화를 가로로 돌려주세요</strong><span>가로 화면에서 조이스틱과 스킬 버튼으로 플레이할 수 있습니다.</span></div>
-<script type="module" src="./src/game.js?v=1.12.0"></script></body></html>
+<script type="module" src="./src/game.js?v=1.12.1"></script></body></html>
 
