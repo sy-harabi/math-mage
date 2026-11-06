@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>아브라칼큘러스!</title>
 <script src="./src/display-mode.js?v=1.12.2"></script>
-<link rel="stylesheet" href="./src/styles.css?v=1.13.0">
+<link rel="stylesheet" href="./src/styles.css?v=1.13.1">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -13,12 +13,12 @@
   <symbol id="icon-heal" viewBox="0 0 48 48"><path d="M19 6h10v13h13v10H29v13H19V29H6V19h13Z"/></symbol>
   <symbol id="icon-mage" viewBox="0 0 48 48"><path d="m9 26 6-7 7-15 9 17 12 6-18 6-21-4Zm5 7-3 9 13 3 13-3-3-10"/><path class="icon-detail" d="M19 34v3m10-3v3"/></symbol>
 </defs></svg>
+<div id="stage"><canvas id="game" width="960" height="600" aria-label="아브라칼큘러스! 게임"></canvas>
 <header class="game-header">
   <div class="hero-hud"><svg class="mage-portrait" aria-hidden="true"><use href="#icon-mage"/></svg><div class="hero-vitals"><div class="hero-level">Lv. <b id="character-level">1</b><span class="shield-label">방어막 <b id="shield-count">0</b></span></div><div class="health-track" role="meter" id="health-meter" aria-label="체력" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="health-fill"></div><b id="health-label">100 / 100</b></div></div></div>
   <div class="run-clock"><span>TIME</span><b id="run-time">00:00.00</b></div>
   <div class="game-brand"><h1>아브라칼큘러스!</h1><small>미분하고, 적분하고, 살아남아라.</small></div>
-</header>
-<div id="stage"><canvas id="game" width="960" height="600" aria-label="아브라칼큘러스! 게임"></canvas><div id="toast" role="status">1 번개 · 2 파이어볼 · 3 보호막 · 4 힐 · WASD 이동</div><div id="slow"></div>
+</header><div id="toast" role="status">1 번개 · 2 파이어볼 · 3 보호막 · 4 힐 · WASD 이동</div><div id="slow"></div>
 <div id="intro-overlay" class="game-overlay intro-overlay" role="dialog" aria-modal="true" aria-labelledby="intro-title">
   <section class="overlay-panel intro-panel">
     <div class="intro-eyebrow">CALCULUS SURVIVAL</div>
@@ -81,10 +81,10 @@
 <button id="heal" disabled class="skill-button locked heal-skill" aria-label="회복 마법" title="4 · 힐"><kbd>4</kbd><svg class="skill-icon" aria-hidden="true"><use href="#icon-heal"/></svg><strong>힐</strong><span class="skill-state" id="heal-state">미습득</span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="heal-fill"></span></span></button>
 </div>
 <div id="touch-joystick" class="touch-joystick" role="group" aria-label="이동 조이스틱"><div class="joystick-guide"></div><div id="joystick-thumb" class="joystick-thumb"></div></div>
-</div><!-- /#stage: touch controls overlay the actual game area -->
 <div class="game-footer"><span id="status"></span><div class="secondary-controls"><button id="cancel">Esc · 취소</button><button id="restart">R · 다시 시작</button></div></div>
 <div class="run-stats"><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span><span>XP <b id="xp-label">0/12</b></span></div>
 <div id="xp-meter" aria-label="다음 레벨 진행도"><div id="xp-progress-fill"></div></div>
+</div><!-- /#stage: touch controls overlay the actual game area -->
 <details id="debug-display-panel" class="debug-display-panel" hidden>
   <summary>개발자 · 화면 모드</summary>
   <div class="debug-display-options" role="group" aria-label="화면 모드 강제 변경">
@@ -102,5 +102,5 @@
 <div id="heal-level-picker" class="debug-level-picker" role="group" hidden aria-label="힐 스킬 레벨 체험"><strong>힐 레벨 체험</strong><button type="button" data-heal-level="1" aria-pressed="true">Lv1 · +20</button><button type="button" data-heal-level="2" aria-pressed="false">Lv2 · +50</button><button type="button" data-heal-level="3" aria-pressed="false">Lv3 · +80</button></div>
 </div>
 <div id="mobile-rotate-notice" role="status"><strong>휴대전화를 가로로 돌려주세요</strong><span>가로 화면에서 조이스틱과 스킬 버튼으로 플레이할 수 있습니다.</span></div>
-<script type="module" src="./src/game.js?v=1.13.0"></script></body></html>
+<script type="module" src="./src/game.js?v=1.13.1"></script></body></html>
 
