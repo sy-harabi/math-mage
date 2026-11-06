@@ -252,3 +252,13 @@ html.mobile-layout #slow{top:calc(var(--hud-top) + 4px)}
 html.mobile-layout #stage{inset:0;width:100%;height:100%}
 html.mobile-layout #stage canvas{width:100%;height:100%;aspect-ratio:auto}
 
+/* Two-finger play: do not let the second touch become a pan/zoom gesture. */
+#fullscreen-toggle{display:none}
+html.mobile-layout #fullscreen-toggle{display:inline-flex;align-items:center;justify-content:center}
+html.mobile-layout .skill-button,
+html.mobile-layout .math-choice{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+html.mobile-layout #stage:fullscreen{
+  position:fixed;inset:0;width:100vw;height:100dvh;margin:0;
+  border:0;border-radius:0;background:#080d20;overflow:hidden
+}
+html.mobile-layout #stage:fullscreen canvas{width:100%;height:100%}
