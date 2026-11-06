@@ -175,7 +175,7 @@ test('game boots with native MathML choices and WASD active during question', as
   frame(1000);frame(2500);
   assert.equal(get('run-time').textContent,'00:00.00','the speedrun clock waits at the intro');
   assert.match(get('intro-bolt-problem').innerHTML,/<mfrac><mi mathvariant="normal">d<\/mi><mrow><mi mathvariant="normal">d<\/mi><mi>x<\/mi><\/mrow><\/mfrac>/);
-  assert.match(html, /이동<\/dt><dd><span class="desktop-only">WASD 또는 가고자 하는 곳 클릭/);
+  assert.match(html, /이동<\/dt><dd><span class="desktop-only">WASD 또는 방향키/);
   assert.match(html, /타겟 지정<\/dt><dd><span class="desktop-only">마우스 클릭/);
   assert.match(html, /마법 사용<\/dt><dd><span class="desktop-only">하단 마법 아이콘 클릭 또는 숫자키 1~4/);
   assert.match(html, /<span class="mobile-only">왼쪽 가상 조이스틱<\/span>/);
