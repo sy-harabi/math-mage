@@ -137,7 +137,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
 #mobile-rotate-notice,.touch-joystick{display:none}
 @media (pointer:coarse) and (max-width:1000px){
   html,body{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
-  body{display:block;touch-action:none}
+  body{display:block}
   #wrap{--side-space:clamp(110px,14vw,150px);position:relative;width:100vw;height:100dvh;min-width:0;padding:0;border:0;border-radius:0;box-shadow:none;overflow:hidden}
   .game-header{position:absolute;z-index:9;left:0;right:0;top:0;height:37px;display:flex;align-items:center;gap:6px;margin:0;padding:3px max(8px,env(safe-area-inset-left));background:#080d20ed}
   .hero-hud{gap:5px}.mage-portrait{width:26px;height:26px}
@@ -146,7 +146,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   .run-clock{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap}
   .run-clock>span{display:none}.run-clock>b{font-size:17px}
   .game-brand{display:none}
-  #stage{position:absolute;left:50%;top:calc(50% + 17px);transform:translate(-50%,-50%);width:min(calc((100dvh - 43px)*1.6),calc(100vw - 2*var(--side-space)));height:auto;aspect-ratio:8/5;border-radius:4px}
+  #stage{position:absolute;left:50%;top:calc(50% + 17px);transform:translate(-50%,-50%);width:min(calc((100dvh - 43px)*1.6),calc(100vw - 2*var(--side-space)));height:auto;aspect-ratio:8/5;border-radius:4px;touch-action:auto}
   #stage canvas{width:100%;height:100%;aspect-ratio:8/5}
   #buttons{position:absolute;z-index:10;right:max(5px,env(safe-area-inset-right));bottom:max(15px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,50px);grid-template-rows:repeat(2,65px);gap:5px;margin:0}
   .skill-button{width:50px;min-height:65px;gap:1px;padding:3px 1px 5px;border-radius:10px;touch-action:manipulation}
@@ -163,13 +163,13 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   #xp-meter{position:absolute;z-index:8;left:50%;bottom:0;transform:translateX(-50%);width:min(calc((100dvh - 43px)*1.6),calc(100vw - 2*var(--side-space)));height:3px}
   #toast{top:5px;padding:4px 7px;font-size:10px}
   #slow{right:4px;top:4px;font-size:9px}
-  .math-choice{width:130px;height:112px;padding:12px 8px}
+  .math-choice{width:130px;height:112px;padding:12px 8px;touch-action:manipulation}
   .math-problem{min-height:100px;gap:4px}.rune-core{width:330px}
   .math-problem math{font-size:29px}.math-cast-hud[data-terms="2"] .math-problem math{font-size:26px}
   .math-cast-hud[data-terms="3"] .math-problem math{font-size:23px}
   .answer-formula math,.math-cast-hud[data-terms="2"] .answer-formula math,.math-cast-hud[data-terms="3"] .math-choice .answer-formula math{font-size:27px}
   .answer-key{font-size:12px}
-  .game-overlay{padding:4px}.overlay-panel{max-height:100%;overflow-y:auto;padding:10px}
+  .game-overlay{padding:4px;touch-action:pan-y}.overlay-panel{max-height:100%;overflow-y:auto;padding:10px;overscroll-behavior:contain}
   .overlay-panel h2{font-size:19px}.overlay-panel p{font-size:11px;margin:4px 0 8px}
   .intro-panel{padding:9px}.intro-eyebrow{font-size:8px}
   .intro-panel h2{font-size:18px;margin:3px 0}.intro-panel .intro-tagline{font-size:10px;margin:0 0 6px}
