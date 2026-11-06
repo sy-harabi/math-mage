@@ -507,7 +507,8 @@ C.addEventListener('pointerdown',ev=>{
   if(mode==='target'){
     const wp=worldPoint(t);
     if(spell==='fireball'){castFireball(wp);return;}
-    const hit=pickEnemyAt(wp,enemies);
+    const touchPadding=ev.pointerType==='touch'?Math.max(20,28*W/C.getBoundingClientRect().width):20;
+    const hit=pickEnemyAt(wp,enemies,touchPadding);
     if(hit)castEnemy(hit);else touchTarget=manualMoveActive()?null:wp;
     return;
   }
