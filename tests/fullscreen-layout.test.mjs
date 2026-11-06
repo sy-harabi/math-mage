@@ -13,7 +13,7 @@ test('every gameplay HUD element lives inside the battlefield',()=>{
   for(const id of ['game','health-meter','run-time','character-level','shield-count',
      'kills','enemies-count','xp-label','xp-meter','buttons','touch-joystick','joystick-thumb',
      'math-cast-hud','intro-overlay','upgrade-overlay','death-overlay','victory-overlay',
-     'status','cancel','restart','debug-display-panel','stage-picker']){
+     'status','cancel','restart','fullscreen-toggle','debug-display-panel','stage-picker']){
     const index=html.indexOf('id="'+id+'"');
     assert.ok(index>stageStart && index<stageEnd, '#'+id+' is outside #stage');
   }
@@ -39,5 +39,6 @@ test('touch movement, multiple pointers, and answer clicks remain available',()=
   assert.match(controls,/activePointer\s*=\s*ev\.pointerId/);
   assert.match(controls,/base\.setPointerCapture\(ev\.pointerId\)/);
   assert.match(game,/joystickInput\.x/);
-  assert.match(game,/button\.addEventListener\('click',\(\)=>selectAnswer\(index\)\)/);
+  assert.match(game,/bindTouchAction\(button,\(\)=>selectAnswer\(index\)\)/);
+  assert.match(game,/bindTouchAction\(dom\[name\],action\)/);
 });
