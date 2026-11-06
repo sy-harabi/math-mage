@@ -36,7 +36,7 @@ test('tap-to-move destination and marker are completely removed',()=>{
 
 test('touch movement, multiple pointers, and answer clicks remain available',()=>{
   const controls=readFileSync(new URL('../src/mobile-controls.js',import.meta.url),'utf8');
-  assert.match(controls,/activePointer=ev\.pointerId/);
+  assert.match(controls,/activePointer\s*=\s*ev\.pointerId/);
   assert.match(controls,/base\.setPointerCapture\(ev\.pointerId\)/);
   assert.match(game,/joystickInput\.x/);
   assert.match(game,/button\.addEventListener\('click',\(\)=>selectAnswer\(index\)\)/);
