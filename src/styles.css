@@ -222,3 +222,15 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   html.mobile-layout.mobile-portrait #mobile-rotate-notice{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;background:#070d20;color:#e7f4ff;text-align:center}
   html.mobile-layout.mobile-portrait #mobile-rotate-notice strong{font-size:21px}
   html.mobile-layout.mobile-portrait #mobile-rotate-notice span{font-size:13px;line-height:1.6;color:#a8bed5}
+
+/* Developer-only display switch is reachable even above the portrait rotation notice. */
+.debug-display-panel[hidden]{display:none!important}
+.debug-display-panel{position:fixed;z-index:150;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));width:min(270px,calc(100vw - 16px));padding:7px 10px;border:1px solid #568ba5;border-radius:9px;background:#0a1830f5;color:#dff7ff;box-shadow:0 8px 30px #000a;touch-action:manipulation}
+.debug-display-panel:not([open]){width:auto}
+.debug-display-panel summary{font-size:12px;font-weight:700;cursor:pointer;user-select:none}
+.debug-display-options{display:flex;gap:5px;margin-top:9px}
+.debug-display-options button{flex:1;padding:8px 7px;font-size:12px;min-width:0}
+.debug-display-options button.selected{border-color:#68efff;color:#aff7ff;background:#19334a}
+.debug-display-panel small{display:block;margin-top:6px;font-size:10px;color:#9ebcd1;line-height:1.5}
+html.mobile-layout .debug-display-panel{top:max(40px,env(safe-area-inset-top));right:max(4px,env(safe-area-inset-right))}
+html.mobile-layout.mobile-portrait .debug-display-panel{top:max(8px,env(safe-area-inset-top))}
