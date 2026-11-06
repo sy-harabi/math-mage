@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>아브라칼큘러스!</title>
 <script src="./src/display-mode.js?v=1.12.2"></script>
-<link rel="stylesheet" href="./src/styles.css?v=1.13.2">
+<link rel="stylesheet" href="./src/styles.css?v=1.13.3">
 </head><body><div id="wrap">
 <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
   <symbol id="icon-bolt" viewBox="0 0 48 48"><path d="M28 3 9 27h14l-4 18 21-27H26Z"/></symbol>
@@ -81,7 +81,7 @@
 <button id="heal" disabled class="skill-button locked heal-skill" aria-label="회복 마법" title="4 · 힐"><kbd>4</kbd><svg class="skill-icon" aria-hidden="true"><use href="#icon-heal"/></svg><strong>힐</strong><span class="skill-state" id="heal-state">미습득</span><span class="cooldown-track" aria-hidden="true"><span class="cooldown-fill" id="heal-fill"></span></span></button>
 </div>
 <div id="touch-joystick" class="touch-joystick" role="group" aria-label="이동 조이스틱"><div class="joystick-guide"></div><div id="joystick-thumb" class="joystick-thumb"></div></div>
-<div class="game-footer"><span id="status"></span><div class="secondary-controls"><button id="cancel">Esc · 취소</button><button id="restart">R · 다시 시작</button></div></div>
+<div class="game-footer"><span id="status"></span><div class="secondary-controls"><button type="button" id="fullscreen-toggle" aria-label="전체화면 전환">전체화면</button><button id="cancel">Esc · 취소</button><button id="restart">R · 다시 시작</button></div></div>
 <div class="run-stats"><span>처치 <b id="kills">0</b></span><span>남은 적 <b id="enemies-count">0</b></span><span>XP <b id="xp-label">0/12</b></span></div>
 <div id="xp-meter" aria-label="다음 레벨 진행도"><div id="xp-progress-fill"></div></div>
 <details id="debug-display-panel" class="debug-display-panel" hidden>
@@ -102,5 +102,5 @@
 </div><!-- /#stage: touch controls overlay the actual game area -->
 
 </div>
-<script type="module" src="./src/game.js?v=1.13.2"></script></body></html>
+<script type="module" src="./src/game.js?v=1.13.3"></script></body></html>
 
