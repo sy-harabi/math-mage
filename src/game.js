@@ -15,7 +15,7 @@ import { createUpgradeCard } from './upgrade-ui.js?v=1.8.1';
 import { guardUpgradeButton } from './upgrade-input.js';
 import { centeredCamera } from './camera.js';
 import { bindJoystick } from './mobile-controls.js?v=1.12.0';
-import { canvasViewport } from './responsive-viewport.js?v=1.13.0';
+import { canvasViewport } from './responsive-viewport.js?v=1.13.2';
 import { separateEnemies } from './enemy-collision.js?v=1.9.0';
 import { pickEnemyAt } from './targeting.js?v=1.9.0';
 import { generateIntegralSequence, answerIntegral } from './integral-sequence.js?v=1.6.0';
@@ -279,7 +279,7 @@ function selectAnswer(index) {
   } else if(spell==='shield'){
     const charges=grantShield(p,activeCastConfig.blocks);
     sparkle(p.x,p.y,'#8df1ff',24);say(`보호막 ${charges}회 충전`);endCast();
-  } else {mode='target';say(spell==='fireball'?'주문 완성! 폭발시킬 위치를 클릭하세요.':'정답! 번개를 맞힐 적을 클릭하세요.',3);}
+  } else {mode='target';say(spell==='fireball'?'주문 완성! 폭발시킬 위치를 지정하세요.':'정답! 번개를 맞힐 적을 선택하세요.',3);}
 }
 function killedEnemy(e) {
   if(!enemies.includes(e))return;
@@ -663,7 +663,7 @@ function draw(){
   if(p.failSlow>0){label(`이동 감속 ${p.failSlow.toFixed(1)}초`,W/2,60,16,'#f5a2b9');}
   if(mode==='target'){
     ctx.fillStyle='#0a1832aa';ctx.fillRect(0,0,W,43);
-    label(spell==='fireball'?'파이어볼 대기 중 — 폭발시킬 위치를 클릭하세요':'번개 대기 중 — 공격할 적을 클릭하세요',W/2,23,19,'#ffedb3');
+    label(spell==='fireball'?'파이어볼 대기 중 — 폭발시킬 위치를 지정하세요':'번개 대기 중 — 공격할 적을 선택하세요',W/2,23,19,'#ffedb3');
     if(selected)circle(selected.x-camera.x,selected.y-camera.y-(selected.jumpHeight||0),selected.r+8,null,'#ffe388',3);
   }
 }
@@ -704,8 +704,8 @@ function updateUI(){
   }
   dom.cancel.disabled=introActive||gameOver||(mode!=='question'&&mode!=='target');
   dom.status.textContent=introActive?'게임 시작을 눌러 플레이하세요':mode==='upgrade'?'레벨업 · 성장 하나 선택':mode==='victory'?'보스 격파 · 기록 완료':
-    mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치를 클릭':'적을 클릭해 발사'):gameOver?'게임 오버':
-    'WASD 이동 · 클릭 이동 / 조준 · 1–4 마법';
+    mode==='question'?(SKILL_IDS.includes(spell)?'':'마법진: 정답 선택'):mode==='target'?(spell==='fireball'?'폭발 위치 지정':'적 선택 후 발사'):gameOver?'게임 오버':
+    'WASD 이동 · 클릭 조준 · 1–4 마법';
   if(DEBUG){
     for(const button of document.querySelectorAll('[data-debug-stage]')){
       const chosen=stage.number===Number(button.dataset.debugStage);
