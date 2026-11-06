@@ -146,7 +146,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   .run-clock{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap}
   .run-clock>span{display:none}.run-clock>b{font-size:17px}
   .game-brand{display:none}
-  #stage{position:absolute;left:50%;top:calc(50% + 17px);transform:translate(-50%,-50%);width:min(calc((100dvh - 43px)*1.6),calc(100vw - 2*var(--side-space)));height:auto;aspect-ratio:8/5;border-radius:4px;touch-action:auto}
+  #stage{position:absolute;left:50%;top:calc(50% + 17px);transform:translate(-50%,-50%);width:min(calc(160dvh - 68.8px),calc(100vw - var(--side-space) - var(--side-space)));height:auto;aspect-ratio:8/5;border-radius:4px;touch-action:auto}
   #stage canvas{width:100%;height:100%;aspect-ratio:8/5}
   #buttons{position:absolute;z-index:10;right:max(5px,env(safe-area-inset-right));bottom:max(15px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,50px);grid-template-rows:repeat(2,65px);gap:5px;margin:0}
   .skill-button{width:50px;min-height:65px;gap:1px;padding:3px 1px 5px;border-radius:10px;touch-action:manipulation}
@@ -160,7 +160,7 @@ button:disabled{cursor:default;opacity:.4}button:hover:not(:disabled){background
   .game-footer{position:absolute;right:max(5px,env(safe-area-inset-right));top:3px;z-index:10;min-height:0;gap:0}
   .game-footer #status{display:none}.secondary-controls{gap:4px}.secondary-controls button{padding:4px 5px;font-size:9px}
   .run-stats{position:absolute;z-index:8;left:50%;bottom:5px;transform:translateX(-50%);gap:8px;margin:0;font-size:9px;white-space:nowrap;pointer-events:none}
-  #xp-meter{position:absolute;z-index:8;left:50%;bottom:0;transform:translateX(-50%);width:min(calc((100dvh - 43px)*1.6),calc(100vw - 2*var(--side-space)));height:3px}
+  #xp-meter{position:absolute;z-index:8;left:50%;bottom:0;transform:translateX(-50%);width:min(calc(160dvh - 68.8px),calc(100vw - var(--side-space) - var(--side-space)));height:3px}
   #toast{top:5px;padding:4px 7px;font-size:10px}
   #slow{right:4px;top:4px;font-size:9px}
   .math-choice{width:130px;height:112px;padding:12px 8px;touch-action:manipulation}
